@@ -33,7 +33,6 @@ class MonteCarloOptionPricing:
         assert no_of_slices >= 0, 'no of slices must be greater than zero'
         assert simulation_rounds >= 0, 'simulation rounds must be greater than zero'
 
-        self.r = float(r)
         self.S0 = float(S0)
         self.K = float(K)
         self.T = float(T)
@@ -43,6 +42,8 @@ class MonteCarloOptionPricing:
 
         self.no_of_slices = int(no_of_slices)
         self.simulation_rounds = int(simulation_rounds)
+
+        self.r = np.full((self.simulation_rounds, self.no_of_slices), r)
 
         self.h = self.T / self.no_of_slices
 
@@ -54,14 +55,71 @@ class MonteCarloOptionPricing:
         if fix_random_seed:
             np.random.seed(15000)
 
+    def vasicek_model(self, r0, alpha, b, interest_vol):
+        """
+        vasicek model for interest rate simulation
+        :param r0: current interest rate
+        :param alpha:
+        :param b:
+        :param interest_vol:
+        :return:
+        """
+        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0)
+
+        for i in range(1, self.no_of_slices):
+            self.interest_array[:, i] = b + np.exp(-alpha / self.no_of_slices) * (
+                    self.interest_array[:, i - 1] - b) + np.sqrt(
+                interest_vol ** 2 / (2 * alpha) * (1 - np.exp(-2 * alpha / self.no_of_slices)))
+
+        # re-define the interest rate array
+        self.r = self.interest_array
+
+        return self.interest_array
+
+    def Cox_Ingersoll_Ross_model(self, r0, alpha, b, interest_vol):
+        """
+        if asset volatility is stochastic
+        incorporate term structure to model risk free rate (r)
+        non central chi-square distribution
+        Interest rate in CIR model cannot be negative
+        :return:
+        """
+        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0)
+
+        self.degree_freedom = 4 * b * alpha / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
+
+        for i in range(1, self.no_of_slices):
+            self.Lambda = (4 * alpha * np.exp(-alpha / self.no_of_slices) * self.interest_array[:, i - 1] / (
+                    interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices))))
+            self.chi_square_factor = np.random.noncentral_chisquare(df=self.degree_freedom,
+                                                                    nonc=self.Lambda)  # Lambda = noncentrality factor
+
+            self.interest_array[:, i] = interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices)) / (
+                    4 * alpha) * self.chi_square_factor
+
+        # re-define the interest rate array
+        self.r = self.interest_array
+
+        return self.interest_array
+
+    def CIR_Heston(self, r0, alpha_r, b_r, interest_vol, v0, alpha_v, b_v, asset_vol):
+        """
+        if asset volatility is stochastic
+        incorporate term structure to model risk free rate (u)
+        non central chi-square distribution
+        Interest rate in CIR model cannot be negative
+        :return:
+        """
+        pass
+
     def stock_price_simulation(self):
         """
         :return:
         """
         self.z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-
         self.price_array = np.zeros((self.simulation_rounds, self.no_of_slices))
-
         self.price_array[:, 0] = self.S0
 
         for i in range(1, self.no_of_slices):
