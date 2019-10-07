@@ -37,13 +37,13 @@ class MonteCarloOptionPricing:
         self.K = float(K)
         self.T = float(T)
         self.mue = float(mue)
-        self.sigma = float(sigma)
         self.div_yield = float(div_yield)
 
         self.no_of_slices = int(no_of_slices)
         self.simulation_rounds = int(simulation_rounds)
 
-        self.r = np.full((self.simulation_rounds, self.no_of_slices), r)
+        self.r = np.full((self.simulation_rounds, self.no_of_slices), r / (self.T * self.no_of_slices))
+        self.sigma = np.full((self.simulation_rounds, self.no_of_slices), sigma)
 
         self.h = self.T / self.no_of_slices
 
@@ -65,7 +65,7 @@ class MonteCarloOptionPricing:
         :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0)
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
 
         for i in range(1, self.no_of_slices):
             self.interest_array[:, i] = b + np.exp(-alpha / self.no_of_slices) * (
@@ -86,7 +86,7 @@ class MonteCarloOptionPricing:
         :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0)
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
 
         self.degree_freedom = 4 * b * alpha / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
 
@@ -94,7 +94,8 @@ class MonteCarloOptionPricing:
             self.Lambda = (4 * alpha * np.exp(-alpha / self.no_of_slices) * self.interest_array[:, i - 1] / (
                     interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices))))
             self.chi_square_factor = np.random.noncentral_chisquare(df=self.degree_freedom,
-                                                                    nonc=self.Lambda)  # Lambda = noncentrality factor
+                                                                    nonc=self.Lambda,
+                                                                    size=self.simulation_rounds)
 
             self.interest_array[:, i] = interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices)) / (
                     4 * alpha) * self.chi_square_factor
@@ -112,7 +113,41 @@ class MonteCarloOptionPricing:
         Interest rate in CIR model cannot be negative
         :return:
         """
-        pass
+        self.df_r = 4 * b_r * alpha_r / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
+        self.df_v = 4 * b_v * alpha_v / asset_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
+
+        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
+
+        self.vol_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
+        self.vol_array = np.full((self.simulation_rounds, self.no_of_slices), v0 / (self.T * self.no_of_slices))
+
+        for i in range(1, self.no_of_slices):
+            # for interest rate simulation
+            self.Lambda = (4 * alpha_r * np.exp(-alpha_r / self.no_of_slices) * self.interest_array[:, i - 1] / (
+                    interest_vol ** 2 * (1 - np.exp(-alpha_r / self.no_of_slices))))
+            self.chi_square_factor = np.random.noncentral_chisquare(df=self.df_r,
+                                                                    nonc=self.Lambda,
+                                                                    size=self.simulation_rounds)
+
+            self.interest_array[:, i] = interest_vol ** 2 * (1 - np.exp(-alpha_r / self.no_of_slices)) / (
+                    4 * alpha_r) * self.chi_square_factor
+
+            # for diffusion/volatility simulation
+            self.Lambda = (4 * alpha_v * np.exp(-alpha_v / self.no_of_slices) * self.vol_array[:, i - 1] / (
+                    asset_vol ** 2 * (1 - np.exp(-alpha_v / self.no_of_slices))))
+            self.chi_square_factor = np.random.noncentral_chisquare(df=self.df_v,
+                                                                    nonc=self.Lambda,
+                                                                    size=self.simulation_rounds)
+
+            self.vol_array[:, i] = asset_vol ** 2 * (1 - np.exp(-alpha_v / self.no_of_slices)) / (
+                    4 * alpha_v) * self.chi_square_factor
+
+        # re-define the interest rate and volatility path
+        self.r = self.interest_array
+        self.sigma = self.vol_array
+
+        return self.interest_z_t, self.vol_array
 
     def stock_price_simulation(self):
         """
@@ -124,7 +159,7 @@ class MonteCarloOptionPricing:
 
         for i in range(1, self.no_of_slices):
             self.price_array[:, i] = self.price_array[:, i - 1] * np.exp(
-                self.exp_mean + self.exp_diffusion * self.z_t[:, i]
+                self.exp_mean[:, i] + self.exp_diffusion[:, i] * self.z_t[:, i]
             )
 
         self.terminal_prices = self.price_array[:, -1]
@@ -133,9 +168,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Number of simulations %4.1i \n S0 %4.1f \n vol %4.2f \n T %2.1f \n Maximum Stock price %4.2f \n"
-            " Minimum Stock price %4.2f \n Average stock price %r4.3f \n Standard Error %4.5f " % (
-                self.simulation_rounds, self.S0, self.sigma, self.T, np.max(self.terminal_prices),
+            " Number of simulations %4.1i \n S0 %4.1f \n initial vol %4.2f \n T %2.1f \n Maximum Stock price %4.2f \n"
+            " Minimum Stock price %4.2f \n Average stock price %4.3f \n Standard Error %4.5f " % (
+                self.simulation_rounds, self.S0, sigma, self.T, np.max(self.terminal_prices),
                 np.min(self.terminal_prices), self.stock_price_expectation, self.stock_price_standard_error
             )
         )
@@ -148,14 +183,14 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.maximum((self.terminal_prices - self.K), 0.0)
 
-        self.expectation = np.mean(self.terminal_profit) * np.exp(- self.r * self.T)
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
         print(
             " European call monte carlo \n S0 %4.1f \n vol %4.2f \n T %2.1f \n "
             "Call Option Value %4.3f \n Standard Error %4.5f " % (
-                self.S0, self.sigma, self.T, self.expectation, self.standard_error
+                self.S0, sigma, self.T, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -173,7 +208,7 @@ class MonteCarloOptionPricing:
         else:
             self.european_call_value = empirical_call
 
-        self.put_value = self.european_call_value + np.exp(-self.r * self.T) * self.K - np.exp(
+        self.put_value = self.european_call_value + np.exp(-np.sum(self.r, axis=1) * self.T) * self.K - np.exp(
             -self.div_yield * self.T) * self.S0
 
         return self.put_value
@@ -196,9 +231,9 @@ class MonteCarloOptionPricing:
             self.terminal_profit = np.maximum((self.K - average_prices), 0.0)
 
         if avg_method == 'arithmetic':
-            self.expectation = np.mean(self.terminal_profit) * np.exp(- self.r * self.T)
+            self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
         elif avg_method == 'geometric':
-            self.expectation = sts.gmean(self.terminal_profit) * np.exp(- self.r * self.T)
+            self.expectation = sts.gmean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
 
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
@@ -206,7 +241,7 @@ class MonteCarloOptionPricing:
         print(
             " Asian %s monte carlo arithmetic average \n S0 %4.1f \n vol %4.2f \n T %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.sigma, self.T, self.expectation, self.standard_error
+                option_type, self.S0, sigma, self.T, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -222,8 +257,7 @@ class MonteCarloOptionPricing:
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
 
-        self.dt = self.T / self.no_of_slices  # time interval
-        self.dis_factor = np.exp(- self.r * self.dt)  # discount factor per time time interval
+        self.dis_factor = np.exp(- self.r * self.h)  # discount factor per time time interval
 
         if option_type == 'call':
             self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
@@ -235,22 +269,22 @@ class MonteCarloOptionPricing:
 
         # Longstaff and Schwartz
         for t in range(self.no_of_slices - 2, 0, -1):  # fill out the value table from backwards
-            self.rg = np.polyfit(x=self.price_array[:, t], y=self.value_matrix[:, t + 1] * self.dis_factor,
+            self.rg = np.polyfit(x=self.price_array[:, t], y=self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1],
                                  deg=poly_degree)  # regression fitting
             self.hold_val = np.polyval(p=self.rg, x=self.price_array[:, t])  # regression estimated value
 
             # determine hold or exercise
             self.value_matrix[:, t] = np.where(self.intrinsic_val[:, t] > self.hold_val, self.intrinsic_val[:, t],
-                                               self.value_matrix[:, t + 1] * self.dis_factor)
+                                               self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1])
 
-        self.american_call_val = np.average(self.value_matrix[:, 1]) * self.dis_factor
-        self.am_std_error = np.std(self.value_matrix[:, 1] * self.dis_factor) / np.sqrt(self.simulation_rounds)
+        self.american_call_val = np.average(self.value_matrix[:, 1] * self.dis_factor[:, 1])
+        self.am_std_error = np.std(self.value_matrix[:, 1] * self.dis_factor[:, 1]) / np.sqrt(self.simulation_rounds)
 
         print('-' * 64)
         print(
             " American %s Long Staff method \n polynomial degree = %i \n S0 %4.1f \n vol %4.2f \n T %2.1f \n "
             "Call Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, poly_degree, self.S0, self.sigma, self.T, self.american_call_val, self.am_std_error
+                option_type, poly_degree, self.S0, sigma, self.T, self.american_call_val, self.am_std_error
             )
         )
         print('-' * 64)
@@ -423,7 +457,7 @@ class MonteCarloOptionPricing:
 if __name__ == '__main__':
     # initialize parameters
     S0 = 100.0  # e.g. spot price = 35
-    K = 100.0  # e.g. exercise price = 40
+    K = 120.0  # e.g. exercise price = 40
     T = 1.0  # e.g. one year
     mue = 0.05  # e.g. expected return of the asset, under risk neutral assumption, mue = r
     r = 0.05  # e.g. risk free rate = 1%
@@ -441,12 +475,11 @@ if __name__ == '__main__':
     MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield, simulation_rounds=simulation_rounds,
                                  no_of_slices=no_of_slice, fix_random_seed=True)
     MT.stock_price_simulation()
-    # MT.european_call()
-    # MT.asian_avg_price_call()
-    # MT.asian_avg_price_put()
-    # MT.american_call(poly_degree=2)
+    MT.european_call()
+    MT.asian_avg_price(avg_method='arithmetic', option_type='call')
+    MT.american_option_monte_carlo(poly_degree=2, option_type='put')
     # MT.american_put(poly_degree=2)
     # MT.down_and_in_parisian_monte_carlo(barrier_price=barrier_price, option_type='call',
     #                                     barrier_condition=barrier_condition)
 
-    MT.LookBackEuropean()
+    # MT.LookBackEuropean()
