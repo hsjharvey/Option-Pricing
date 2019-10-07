@@ -19,7 +19,7 @@ class MonteCarloOptionPricing:
         :param S0: current price of the underlying asset (e.g. stock)
         :param K: exercise price
         :param T: time to maturity, in years, can be float
-        :param mue: interest rate, here we assume constant interest rate model
+        :param r: interest rate, here we assume constant interest rate model
         :param sigma: volatility (in standard deviation) of the asset annual returns
         :param div_yield: annual dividend yield
         :param simulation_rounds: in general, monte carlo option pricing requires many simulations
@@ -367,7 +367,7 @@ if __name__ == '__main__':
     S0 = 100.0  # e.g. spot price = 35
     K = 100.0  # e.g. exercise price = 40
     T = 1.0  # e.g. one year
-    mue = 0.05  # e.g. expected return of the asset
+    mue = 0.05  # e.g. expected return of the asset, under risk neutral assumption, mue = r
     r = 0.05  # e.g. risk free rate = 1%
     sigma = 0.25  # e.g. volatility = 5%
     div_yield = 0.0  # e.g. dividend yield = 1%

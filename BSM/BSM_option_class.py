@@ -223,27 +223,27 @@ class GarmanKohlhagenForex(BSMOptionValuation):
 
         self.d2 = self.d1 - self.sigma * sqrt(self.T)
 
-    def call_value(self, observed_put_price=None):
+    def call_value(self, empirical_put_price=None):
         """
         :return: call option value
         """
-        if observed_put_price is None:
+        if empirical_put_price is None:
             call_value = (self.S0 * exp(- self.rf * self.T) * stats.norm.cdf(self.d1, 0.0, 1.0) - self.K * exp(
                 - self.rd * self.T) * stats.norm.cdf(self.d2, 0.0, 1.0))
         else:
-            call_value = observed_put_price + exp(-self.div_yield * self.T) * self.S0 - exp(-self.r * self.T) * self.K
+            call_value = empirical_put_price + exp(-self.div_yield * self.T) * self.S0 - exp(-self.r * self.T) * self.K
 
         return call_value
 
-    def put_value(self, observed_call_price=None):
+    def put_value(self, empirical_call_price=None):
         """
         Use put call parity (incl. continuous dividend) to calculate the put option value
         :return: put option value
         """
-        if observed_call_price is None:
+        if empirical_call_price is None:
             put_value = self.K * exp(- self.rd * self.T) * stats.norm.cdf(- self.d2, 0.0, 1.0) - self.S0 * exp(
                 - self.rf * self.T) * stats.norm.cdf(- self.d1, 0.0, 1.0)
         else:
-            put_value = observed_call_price + exp(-self.r * self.T) * self.K - exp(-self.div_yield * self.T) * self.S0
+            put_value = empirical_call_price + exp(-self.r * self.T) * self.K - exp(-self.div_yield * self.T) * self.S0
 
         return put_value
