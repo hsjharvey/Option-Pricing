@@ -25,6 +25,11 @@ simulation_rounds = 100000  # For monte carlo simulation, a large number of simu
 # initialize
 MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield, simulation_rounds=simulation_rounds,
                              no_of_slices=no_of_slice, fix_random_seed=True)
+
+# MT.vasicek_model()  # use vasicek model to simulate the interest rate
+# MT.Cox_Ingersoll_Ross_model()  # use Cox_Ingersoll_Ross model to simulate the interest rate
+# MT.CIR_Heston()  # CIR interest rate and Heston model to simulate volatility (sigma)
+
 MT.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
 MT.european_call()
