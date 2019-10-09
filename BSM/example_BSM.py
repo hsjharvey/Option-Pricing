@@ -35,13 +35,13 @@ implied_volatility = x.imp_vol(C0=observed_call_price)
 
 # Calculate put price
 put_price_cal = x.put_value()  # using calculated call price
-put_price_obs = x.put_value(observed_call_price)  # using observed call price
+put_price_obs = x.put_value(observed_call_price=observed_call_price)  # using observed call price
 
 # Calculate lookback option price
 # Step 1: simulate stock price over the option life (use Monte Carlo)
 # Step 2: input Max and Min stock price and calculate the lookback option price
-lookback_call = x.lookback_BSM("call", 150, 50)  # (150, 50) is the (max, min) price over option life
-lookback_put = x.lookback_BSM("put", 150, 50)
+# (150, 50) is the (max, min) price over option life
+lookback_call = x.lookback_BSM(option_type="call", max_share_price=150, min_share_price=50)
 
 # Results
 print("Call price using calculations: " + str(call_price))
@@ -55,4 +55,3 @@ print("Put price using the calculated call: " + str(put_price_cal))
 print("Put price using the observed call: " + str(put_price_obs))
 print("=" * 64)
 print("Lookback call price is: " + str(lookback_call))
-print("Lookback put price is: " + str(lookback_put))
