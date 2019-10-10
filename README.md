@@ -1,36 +1,46 @@
 # Option Pricing
 The repo is a refactorization of the code for an assignment in FNCE40009 Advanced Financial Derivatives.
-> If you have any questions or want to report a bug, please open an issue.
+> If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
+>
+> Note that I have no interest in optimizing the speed (e.g. Numba, Cython or GPU support, etc.). 
+>
+> This repo is mainly designed for those who want to study advanced option pricing, not for commercial use.
+> This is also the reason that the repo is built purely on standard numpy and scipy packages.
+>
+> I have tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
+> without sacrificing the ability to refer the code back to the equations in the textbook.
 ```
 @misc{optionPricingHuang,
   author = {Shijie Huang},
-  title = {option pricing},
+  title = {Option Pricing},
   year = {2016},
   publisher = {GitHub},
   journal = {GitHub Repository},
 }
 ```
-Citation: The majority of the code is an implementation of the algorithms described in the following textbook.
+Citation: the majority of the code is an implementation of the algorithms described in the following textbook.
 ```
 @book{mcdonald2006derivatives,
-  title={Derivatives markets},
-  author={McDonald, Robert Lynch and Cassano, Mark and Fahlenbrach, R{\"u}diger},
-  year={2006},
-  publisher={Addison-Wesley Boston}
+  title={Derivatives markets (3rd edition)},
+  author={McDonald, Robert Lynch},
+  year={2013},
+  publisher={Pearson Education}
 }
 ```
-## Black-Scholes-Merton (BSM)
+## Black-Scholes-Merton (BSM) Chapter 12
+How to use: `example_BSM.py`
+ * 12.1: European call `call_value()`, European put `put_value()`
+ * 12.2: (class) `GarmanKohlhagenForex`
+ * 12.5: implied volatility `imp_vol()`
+ * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`
 
 
 
 ## Monte Carlo Simulation
-T: period, in years. e.g. 1.0 = 1year
+How to use: `example_monte_carlo.py`
+* Chapter 18 & 19.3: `stock_price_simulation()`
+* Chapter 19.8: `stock_price_simulation_with_poisson_jump()`
 
-Number of slices: e.g. 252 trading days.
-
-
-* `stock_price_simulation: `
-$$ S_{t+h} = S_t * e^{} $$
 Final estimated price is the average of all the simulated price at time T (column T).
 
 | Stock price | h | 2h  | 3h | ... |T-h|T|
@@ -40,8 +50,9 @@ Final estimated price is the average of all the simulated price at time T (colum
 | simulation 3 |   |   |  |  |  | $S_{3,T}$|
 | ... |   |   |  |  |  | ... |
 
-* `vasicek: ` and `Cox_Ingersoll_Ross_model` and `CIR_Heston`: interest rate and volatility simulation.
-Note: the default case is two tables with constant values. You have to call these two functions before stock_price_simulation
+* `vasicek()` and `Cox_Ingersoll_Ross_model()` and `CIR_Heston()`: interest rate and volatility simulation.
+Note: the default case is two tables with constant values. You have to call these two functions 
+before `stock_price_simulation()`.
 
 | Interest rate r | h | 2h  | 3h | ... |T-h|T|
 | :---------: |:---------:| -----:| -----:| -----:| -----:|----:|
@@ -56,3 +67,15 @@ Note: the default case is two tables with constant values. You have to call thes
 | simulation 2 |   |   |  |  |  | $\sigma_{2,T}$ |
 | simulation 3 |   |   |  |  |  | $\sigma_{3,T}$|
 | ... |   |   |  |  |  | ... |
+
+* Chapter 19.4: `european_call()` & `european_put()`
+* Chapter 14.2 & 19.4: `asian_avg_price()`
+* Chapter 19.6: `american_option_monte_carlo()`, Longstaff & Schwartz (2001).
+* Chapter 14 & 23: exotic options, e.g. `down_and_in_parisian_monte_carlo()`
+* Chapter 23, exercise 23.12: `LookBackEuropean()`
+
+## References:
+* Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. Journal of financial economics, 3(1-2), 125-144.
+* Garman, M. B. and Kohlhagen, S. W. (1983). "Foreign Currency Option Values." Journal of
+    International Money and Finance 2, 231-237.
+* Longstaff, F. A., & Schwartz, E. S. (2001). Valuing American options by simulation: a simple least-squares approach. The review of financial studies, 14(1), 113-147.
