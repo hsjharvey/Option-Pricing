@@ -20,7 +20,7 @@ The repo is a refactorization of the code for an assignment in FNCE40009 Advance
 ```
 Citation: the majority of the code is an implementation of the algorithms described in the following textbook.
 ```
-@book{mcdonald2006derivatives,
+@book{mcdonald2013derivatives,
   title={Derivatives markets (3rd edition)},
   author={McDonald, Robert Lynch},
   year={2013},
@@ -52,7 +52,7 @@ Final estimated price is the average of all the simulated price at time T (colum
 
 * `vasicek()` and `Cox_Ingersoll_Ross_model()` and `CIR_Heston()`: interest rate and volatility simulation.
 Note: the default case is two tables with constant values. You have to call these two functions 
-before `stock_price_simulation()`.
+before running `stock_price_simulation()`.
 
 | Interest rate r | h | 2h  | 3h | ... |T-h|T|
 | :---------: |:---------:| -----:| -----:| -----:| -----:|----:|
