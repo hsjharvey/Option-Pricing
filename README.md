@@ -16,6 +16,7 @@ The repo is a refactorization of the code for an assignment in FNCE40009 Advance
   year = {2016},
   publisher = {GitHub},
   journal = {GitHub Repository},
+  howpublished = {\url{https://github.com/hsjharvey/option-pricing}},
 }
 ```
 Citation: the majority of the code is an implementation of the algorithms described in the following textbook.
