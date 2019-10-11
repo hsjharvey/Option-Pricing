@@ -1,5 +1,5 @@
 # Option Pricing
-The repo is a refactorization of the code for an assignment in FNCE40009 Advanced Financial Derivatives.
+The repo is a refactorization of the code for an assignment in FNCE40009 Advanced Derivative Securities.
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
 >
 > Note that I have no interest in optimizing the speed (e.g. Numba, Cython or GPU support, etc.). 
