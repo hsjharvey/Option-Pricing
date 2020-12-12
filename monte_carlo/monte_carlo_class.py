@@ -471,7 +471,7 @@ class MonteCarloOptionPricing:
 
         return self.expectation, self.standard_error
 
-    def LookBackEuropean(self, option_type='call'):
+    def look_back_european(self, option_type='call'):
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
 

@@ -2,8 +2,6 @@
 The repo is a refactorization of the code for an assignment in FNCE40009 Advanced Derivative Securities.
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
 >
-> Note that I have no interest in optimizing the speed (e.g. Numba, Cython or GPU support, etc.). 
->
 > This repo is mainly designed for those who want to study advanced option pricing, not for commercial use.
 > This is also the reason that the repo is built purely on standard numpy and scipy packages.
 >
@@ -19,7 +17,7 @@ The repo is a refactorization of the code for an assignment in FNCE40009 Advance
   howpublished = {\url{https://github.com/hsjharvey/option-pricing}},
 }
 ```
-Citation: the majority of the code is an implementation of the algorithms described in the following textbook.
+Reference: most of the code is an implementation of the algorithms described in the following textbook.
 ```
 @book{mcdonald2013derivatives,
   title={Derivatives markets (3rd edition)},
@@ -73,7 +71,7 @@ before running `stock_price_simulation()`.
 * Chapter 14.2 & 19.4: `asian_avg_price()`
 * Chapter 19.6: `american_option_monte_carlo()`, Longstaff & Schwartz (2001).
 * Chapter 14 & 23: exotic options, e.g. `down_and_in_parisian_monte_carlo()`
-* Chapter 23, exercise 23.12: `LookBackEuropean()`
+* Chapter 23, exercise 23.12: `look_back_european()`
 
 ## References:
 * Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. Journal of financial economics, 3(1-2), 125-144.

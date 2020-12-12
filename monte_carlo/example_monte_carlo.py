@@ -38,4 +38,4 @@ MT.american_option_monte_carlo(poly_degree=2, option_type='put')
 MT.down_and_in_parisian_monte_carlo(barrier_price=barrier_price, option_type='call',
                                     barrier_condition=barrier_condition)
 
-MT.LookBackEuropean()
+MT.look_back_european()
