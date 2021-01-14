@@ -109,7 +109,7 @@ class BSMOptionValuation:
 
         return vega
 
-    def imp_vol(self, observed_call_price, sigma_est=0.15, iteration=1000):
+    def implied_vol(self, observed_call_price, iteration=1000):
         """
         Newton-Raphson iterative approach, assuming BSM model
         :param C0: observed call option value
@@ -117,12 +117,9 @@ class BSMOptionValuation:
         :param iteration: no. of iteration
         :return: implied volatility given option price
         """
-        self.sigma = sigma_est
-        vega = self.vega()
-        bsm_call_value = self.call_value()
 
         for _ in range(iteration):
-            self.sigma -= (bsm_call_value - observed_call_price) / vega
+            self.sigma -= (self.call_value() - observed_call_price) / self.vega()
 
         return self.sigma
 

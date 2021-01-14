@@ -31,7 +31,7 @@ theta = x.theta()
 vega = x.vega()
 
 # Calculate implied volatility
-implied_volatility = x.imp_vol(observed_call_price=observed_call_price, sigma_est=sigma, iteration=1000)
+implied_volatility = x.implied_vol(observed_call_price=observed_call_price, iteration=1000)
 
 # Calculate put price
 put_price_cal = x.put_value()  # using calculated call price
