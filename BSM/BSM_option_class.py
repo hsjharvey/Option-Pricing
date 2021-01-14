@@ -102,25 +102,29 @@ class BSMOptionValuation:
 
     def vega(self):
         """
-        :return: Vega of option
+        :return: vega of option
         change in delta value due to volatility of stock price change
         """
         vega = self.S0 * stats.norm.cdf(self.d1, 0.0, 1.0) * sqrt(self.T)
 
         return vega
 
-    def imp_vol(self, C0, sigma_est=0.15, iteration=1000):
+    def imp_vol(self, observed_call_price, sigma_est=0.15, iteration=1000):
         """
+        Newton-Raphson iterative approach, assuming BSM model
         :param C0: observed call option value
-        :param sigma_est: estimated volatility
+        :param sigma_est: estimated volatility, starting value
         :param iteration: no. of iteration
         :return: implied volatility given option price
         """
-        option = BSMOptionValuation(self.S0, self.K, self.T, self.r, sigma_est, self.div_yield)
-        for _ in range(iteration):
-            option.sigma -= (option.call_value() - C0) / option.vega()
+        self.sigma = sigma_est
+        vega = self.vega()
+        bsm_call_value = self.call_value()
 
-        return option.sigma
+        for _ in range(iteration):
+            self.sigma -= (bsm_call_value - observed_call_price) / vega
+
+        return self.sigma
 
     def put_value(self, observed_call_price=None):
         """
