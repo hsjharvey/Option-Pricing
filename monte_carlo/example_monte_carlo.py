@@ -8,13 +8,13 @@ from monte_carlo.monte_carlo_class import *
 
 # initialize parameters
 S0 = 100.0  # e.g. spot price = 35
-K = 120.0  # e.g. exercise price = 40
+K = 100.0  # e.g. exercise price = 40
 T = 1.0  # e.g. one year
 mue = 0.05  # e.g. expected return of the asset, under risk neutral assumption, mue = r
 r = 0.05  # e.g. risk free rate = 1%
 sigma = 0.25  # e.g. volatility = 5%
 div_yield = 0.0  # e.g. dividend yield = 1%
-no_of_slice = 252  # e.g. quarterly adjusted
+no_of_slice = 252  # e.g. quarterly adjusted or 252 trading days adjusted
 
 barrier_price = 80.0  # barrier level for barrier options
 barrier_condition = 21  # no.of consecutive trading days required for parisian options
@@ -23,8 +23,10 @@ barrier_condition = 21  # no.of consecutive trading days required for parisian o
 simulation_rounds = 100000  # For monte carlo simulation, a large number of simulations required
 
 # initialize
-MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield, simulation_rounds=simulation_rounds,
-                             no_of_slices=no_of_slice, fix_random_seed=True)
+MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield,
+                             simulation_rounds=simulation_rounds,
+                             no_of_slices=no_of_slice,
+                             fix_random_seed=True)
 
 # MT.vasicek_model()  # use vasicek model to simulate the interest rate
 # MT.Cox_Ingersoll_Ross_model()  # use Cox_Ingersoll_Ross model to simulate the interest rate

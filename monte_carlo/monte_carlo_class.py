@@ -167,9 +167,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Number of simulations %4.1i \n S0 %4.1f \n T %2.1f \n Maximum Stock price %4.2f \n"
+            " Number of simulations %4.1i \n S0 %4.1f \n K %2.1f \n Maximum Stock price %4.2f \n"
             " Minimum Stock price %4.2f \n Average stock price %4.3f \n Standard Error %4.5f " % (
-                self.simulation_rounds, self.S0, self.T, np.max(self.terminal_prices),
+                self.simulation_rounds, self.S0, self.K, np.max(self.terminal_prices),
                 np.min(self.terminal_prices), self.stock_price_expectation, self.stock_price_standard_error
             )
         )
@@ -210,9 +210,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Number of simulations %4.1i \n S0 %4.1f \n T %2.1f \n Maximum Stock price %4.2f \n"
+            " Number of simulations %4.1i \n S0 %4.1f \n K %2.1f \n Maximum Stock price %4.2f \n"
             " Minimum Stock price %4.2f \n Average stock price %4.3f \n Standard Error %4.5f " % (
-                self.simulation_rounds, self.S0, self.T, np.max(self.terminal_prices),
+                self.simulation_rounds, self.S0, self.K, np.max(self.terminal_prices),
                 np.min(self.terminal_prices), self.stock_price_expectation, self.stock_price_standard_error
             )
         )
@@ -230,9 +230,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " European call monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " European call monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Call Option Value %4.3f \n Standard Error %4.5f " % (
-                self.S0, self.T, self.expectation, self.standard_error
+                self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -281,9 +281,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Asian %s monte carlo arithmetic average \n S0 %4.1f \n T %2.1f \n "
+            " Asian %s monte carlo arithmetic average \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -324,9 +324,10 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " American %s Long Staff method \n polynomial degree = %i \n S0 %4.1f \n T %2.1f \n "
+            " American %s Long Staff method (assume polynomial fit)"
+            " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n "
             "Call Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, poly_degree, self.S0, self.T, self.american_call_val, self.am_std_error
+                option_type, poly_degree, self.S0, self.K, self.american_call_val, self.am_std_error
             )
         )
         print('-' * 64)
@@ -359,9 +360,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -394,9 +395,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -429,9 +430,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -462,9 +463,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " down-and-in European %s monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
@@ -488,9 +489,9 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Lookback european %s monte carlo \n S0 %4.1f \n T %2.1f \n "
+            " Lookback european %s monte carlo \n S0 %4.1f \n K %2.1f \n "
             "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.T, self.expectation, self.standard_error
+                option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)

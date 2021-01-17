@@ -17,7 +17,7 @@ class BSMOptionValuation:
     K: float
         strike price
     T: float
-        maturity (in year fractions)
+        time to maturity (in year fractions)
     r: float
         constant risk-free short rate
         assume flat term structure
@@ -68,8 +68,8 @@ class BSMOptionValuation:
 
     def delta(self):
         """
+        Delta measures the change in the option price for a $1 change in the stock price
         :return: delta of the option
-        change in option value due to $1 change in stock price
         """
         delta_call = exp(- self.div_yield * self.T) * stats.norm.cdf(self.d1, 0.0, 1.0)
         delta_put = -exp(- self.div_yield * self.T) * stats.norm.cdf(-self.d1, 0.0, 1.0)
@@ -78,8 +78,8 @@ class BSMOptionValuation:
 
     def gamma(self):
         """
+        Gamma measures the change in delta when the stock price changes
         :return: gamma of the option
-         change in option delta value due to $1 change in stock price
         """
         gamma = exp(-self.div_yield * self.T) * stats.norm.pdf(self.d1) / (self.S0 * self.sigma * sqrt(self.T))
 
@@ -87,14 +87,18 @@ class BSMOptionValuation:
 
     def theta(self):
         """
-        :return: theta of the option
-        change in option value due to change in maturity
-        """
-        self.part1 = self.div_yield * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(self.d1)
-        self.part2 = self.r * self.K * stats.norm.cdf(self.d2)
-        self.part3 = (self.K * exp(-self.r * self.T) * stats.norm.pdf(self.d2) * self.sigma) / (2 * sqrt(self.T))
+        Theta measures the change in the option price with respect to calendar time (t ),
+        holding fixed time to expiration (T).
 
-        theta_call = self.part1 - self.part2 - self.part3
+        If time to expiration is measured in years, theta will be the annualized change in the option value.
+        To obtain a per-day theta, divide by 365.
+        :return: theta of the option
+        """
+        part1 = self.div_yield * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(self.d1)
+        part2 = self.r * self.K * stats.norm.cdf(self.d2)
+        part3 = (self.K * exp(-self.r * self.T) * stats.norm.pdf(self.d2) * self.sigma) / (2 * sqrt(self.T))
+
+        theta_call = part1 - part2 - part3
         theta_put = theta_call + self.r * self.K * exp(-self.r * self.T) - self.div_yield * self.S0 * exp(
             -self.div_yield * self.T)
 
@@ -102,17 +106,49 @@ class BSMOptionValuation:
 
     def vega(self):
         """
+        Vega measures the change in the option price when volatility changes. Some writers also
+        use the terms lambda or kappa to refer to this measure:
+        It is common to report vega as the change in the option price per percentage point change
+        in the volatility. This requires dividing the vega formula above by 100.
         :return: vega of option
-        change in delta value due to volatility of stock price change
         """
-        vega = self.S0 * stats.norm.cdf(self.d1, 0.0, 1.0) * sqrt(self.T)
+        vega = self.S0 * exp(-self.div_yield * self.T) * stats.norm.pdf(self.d1, 0.0, 1.0) * sqrt(self.T)
 
         return vega
+
+    def rho(self):
+        """
+        Returns: call_rho, put_rho
+        -------
+        Rho is the partial derivative of the option price with respect to the interest rate.
+        These expressions for rho assume a change in r of 1.0. We are typically interested in
+        evaluating the effect of a change of 0.01 (100 basis points) or 0.0001 (1 basis point). To
+        report rho as a change per percentage point in the interest rate, divide this measure by 100.
+        To interpret it as a change per basis point, divide by 10,000.
+        """
+        call_rho = self.T * self.K * exp(-self.r * self.T) * stats.norm.cdf(self.d2)
+        put_rho = -self.T * self.K * exp(-self.r * self.T) * stats.norm.cdf(-self.d2)
+
+        return call_rho, put_rho
+
+    def psi(self):
+        """
+        Returns: call_psi, put psi
+        -------
+        Psi is the partial derivative of the option price with respect to the continuous dividend yield:
+        To interpret psi as a price change per percentage point change in the dividend yield, divide
+        by 100.
+        """
+        call_psi = - self.T * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(self.d1)
+        put_psi = self.T * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(-self.d1)
+
+        return call_psi, put_psi
 
     def implied_vol(self, observed_call_price, iteration=1000):
         """
         Newton-Raphson iterative approach, assuming BSM model
         :param C0: observed call option value
+        :param observed_call_price: call price from the market
         :param sigma_est: estimated volatility, starting value
         :param iteration: no. of iteration
         :return: implied volatility given option price

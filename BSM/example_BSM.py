@@ -6,12 +6,12 @@
 
 from BSM.BSM_option_class import *
 
-S0 = 2168.27  # e.g. spot price = 35
-K = 2150  # e.g. exercise price = 40
-T = 1.2  # e.g. six months
-r = 0.006  # e.g. risk free rate = 1%
-sigma = 0.1684  # e.g. volatility = 5%
-div_yield = 0.0205  # e.g. dividend yield = 1%
+S0 = 100  # e.g. spot price = 35
+K = 100  # e.g. exercise price = 40
+T = 1.0  # e.g. six months
+r = 0.05  # e.g. risk free rate = 1%
+sigma = 0.25  # e.g. volatility = 5%
+div_yield = 0.0  # e.g. dividend yield = 1%
 
 # initialize
 x = BSMOptionValuation(S0, K, T, r, sigma, div_yield)
@@ -29,6 +29,8 @@ delta = x.delta()
 gamma = x.gamma()
 theta = x.theta()
 vega = x.vega()
+rho = x.rho()
+psi = x.psi()
 
 # Calculate implied volatility
 implied_volatility = x.implied_vol(observed_call_price=observed_call_price, iteration=1000)
@@ -50,6 +52,8 @@ print("Delta of the call: " + str(delta[0]) + "    " + "Delta of put: " + str(de
 print("Gamma is: " + str(gamma))
 print("Theta of the call: " + str(theta[0]) + "    " + "Theta of put: " + str(theta[1]))
 print("Vega is: " + str(vega))
+print("Rho is: " + str(rho))
+print("Psi is: " + str(psi))
 print("Implied volatility: " + str(implied_volatility))
 print("Put price using the calculated call: " + str(put_price_cal))
 print("Put price using the observed call: " + str(put_price_obs))
