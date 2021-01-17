@@ -1,12 +1,14 @@
 # Option Pricing
-The repo is a refactorization of the code for an assignment in FNCE40009 Advanced Derivative Securities.
-> If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
->
+The repo is a refactorization (and some extensions) of the code for an assignment in FNCE40009 Advanced Derivative Securities.
 > This repo is mainly designed for those who want to study advanced option pricing, not for commercial use.
 > This is also the reason that the repo is built purely on standard numpy and scipy packages.
 >
 > I have tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
 > without sacrificing the ability to refer the code back to the equations in the textbook.
+>
+> Although I will not claim that this repo is bug-free, the outputs are verified with the answers of some questions in the textbook.
+>
+> If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
 ```
 @misc{optionPricingHuang,
   author = {Shijie Huang},
@@ -31,7 +33,7 @@ How to use: `example_BSM.py`
  * 12.1: European call `call_value()`, European put `put_value()`
  * 12.2: (class) `GarmanKohlhagenForex`
  * 12.5: implied volatility `imp_vol()`
- * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`
+ * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`, `rho()`, `psi()`
 
 
 
