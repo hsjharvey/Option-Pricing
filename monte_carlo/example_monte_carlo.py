@@ -36,7 +36,7 @@ MT.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
 MT.european_call()
 MT.asian_avg_price(avg_method='arithmetic', option_type='call')
-MT.american_option_monte_carlo(poly_degree=2, option_type='put')
+MT.american_option_long_schwartz(poly_degree=2, option_type='put')
 MT.down_and_in_parisian_monte_carlo(barrier_price=barrier_price, option_type='call',
                                     barrier_condition=barrier_condition)
 

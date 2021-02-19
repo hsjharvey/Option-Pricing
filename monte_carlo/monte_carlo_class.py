@@ -288,7 +288,7 @@ class MonteCarloOptionPricing:
         )
         print('-' * 64)
 
-    def american_option_monte_carlo(self, poly_degree=2, option_type='call'):
+    def american_option_long_schwartz(self, poly_degree=2, option_type='call'):
         """
         American option
         Longstaff and Schwartz method
@@ -306,10 +306,10 @@ class MonteCarloOptionPricing:
         elif option_type == 'put':
             self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
 
-        self.value_matrix = np.zeros_like(self.intrinsic_val)  # sample shape
-        self.value_matrix[:, -1] = self.intrinsic_val[:, -1]  # last day american option value = intrinsic value
+        self.cashflow_matrix = np.zeros_like = (self.intrinsic_val)
+        self.cashflow_matrix[:, -1] = self.intrinsic_val[:, -1]
 
-        # Longstaff and Schwartz
+        # Longstaff and Schwartz iteration
         for t in range(self.no_of_slices - 2, 0, -1):  # fill out the value table from backwards
             # find out in-the-money path to better estimate the conditional expectation function
             # where exercise is relevant and significantly improves the efficiency of the algorithm
@@ -318,33 +318,38 @@ class MonteCarloOptionPricing:
             elif option_type == 'put':
                 itm_path = np.where(self.price_array[:, t] < self.K)
 
-            Y = self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1]
+            Y = self.cashflow_matrix[:, t + 1] * self.dis_factor[:, t + 1]
             Y = Y[itm_path]
 
             X = self.price_array[:, t]
             X = X[itm_path]
 
             self.rg = np.polyfit(x=X, y=Y, deg=poly_degree)  # regression fitting
-            self.hold_val = np.polyval(p=self.rg, x=self.price_array[:, t])  # regression estimated value
+            self.hold_val = np.polyval(p=self.rg, x=self.price_array[itm_path, t])  # regression estimated value
 
             # determine hold or exercise
-            self.value_matrix[:, t] = np.where(self.intrinsic_val[:, t] > self.hold_val, self.intrinsic_val[:, t],
-                                               0)
+            self.cashflow_matrix[itm_path, t] = np.where(self.intrinsic_val[itm_path, t] > self.hold_val,
+                                                         self.intrinsic_val[itm_path, t], 0)
 
-        self.american_call_val = np.average(self.value_matrix[:, 1] * self.dis_factor[:, 1])
-        self.am_std_error = np.std(self.value_matrix[:, 1] * self.dis_factor[:, 1]) / np.sqrt(self.simulation_rounds)
+            # for those exercise path, put all future cashflow to be 0
+            self.cashflow_matrix[itm_path, (t + 1):] = np.where(self.intrinsic_val[itm_path, t] > self.hold_val, 0,
+                                                                self.cashflow_matrix[itm_path, t + 1])
+
+        dcf = self.cashflow_matrix * self.dis_factor
+        self.option_val = np.average(dcf)
+        self.am_std_error = np.std(dcf.sum(axis=1)) / np.sqrt(self.simulation_rounds)
 
         print('-' * 64)
         print(
             " American %s Long Staff method (assume polynomial fit)"
-            " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n "
-            "Call Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, poly_degree, self.S0, self.K, self.american_call_val, self.am_std_error
+            " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n"
+            " Option Value %4.3f \n Standard Error %4.5f " % (
+                option_type, poly_degree, self.S0, self.K, self.option_val, self.am_std_error
             )
         )
         print('-' * 64)
 
-        return self.american_call_val, self.am_std_error
+        return self.option_val, self.am_std_error
 
     def down_and_in_parisian_monte_carlo(self, barrier_price, option_type, barrier_condition=1):
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
