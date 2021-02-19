@@ -293,7 +293,7 @@ class MonteCarloOptionPricing:
         American option
         Longstaff and Schwartz method
         :param poly_degree: x^n, default = 2
-        :param option_type: x^n, default = 2
+        :param option_type: call or put
         :return:
         """
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
@@ -311,13 +311,25 @@ class MonteCarloOptionPricing:
 
         # Longstaff and Schwartz
         for t in range(self.no_of_slices - 2, 0, -1):  # fill out the value table from backwards
-            self.rg = np.polyfit(x=self.price_array[:, t], y=self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1],
-                                 deg=poly_degree)  # regression fitting
+            # find out in-the-money path to better estimate the conditional expectation function
+            # where exercise is relevant and significantly improves the efficiency of the algorithm
+            if option_type == 'call':
+                itm_path = np.where(self.price_array[:, t] > self.K)
+            elif option_type == 'put':
+                itm_path = np.where(self.price_array[:, t] < self.K)
+
+            Y = self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1]
+            Y = Y[itm_path]
+
+            X = self.price_array[:, t]
+            X = X[itm_path]
+
+            self.rg = np.polyfit(x=X, y=Y, deg=poly_degree)  # regression fitting
             self.hold_val = np.polyval(p=self.rg, x=self.price_array[:, t])  # regression estimated value
 
             # determine hold or exercise
             self.value_matrix[:, t] = np.where(self.intrinsic_val[:, t] > self.hold_val, self.intrinsic_val[:, t],
-                                               self.value_matrix[:, t + 1] * self.dis_factor[:, t + 1])
+                                               0)
 
         self.american_call_val = np.average(self.value_matrix[:, 1] * self.dis_factor[:, 1])
         self.am_std_error = np.std(self.value_matrix[:, 1] * self.dis_factor[:, 1]) / np.sqrt(self.simulation_rounds)
