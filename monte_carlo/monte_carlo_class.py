@@ -22,14 +22,14 @@ class MonteCarloOptionPricing:
         :param sigma: volatility (in standard deviation) of the asset annual returns
         :param div_yield: annual dividend yield
         :param simulation_rounds: in general, monte carlo option pricing requires many simulations
-        :param no_of_slices: between time 0 and time T, the number of slices, e.g. 252 if trading days are required
+        :param no_of_slices: between time 0 and time T, the number of slices PER YEAR, e.g. 252 if trading days are required
         :param fix_random_seed: boolean, True or False
         """
         assert sigma >= 0, 'volatility cannot be less than zero'
         assert S0 >= 0, 'initial stock price cannot be less than zero'
         assert T >= 0, 'time to maturity cannot be less than zero'
         assert div_yield >= 0, 'dividend yield cannot be less than zero'
-        assert no_of_slices >= 0, 'no of slices must be greater than zero'
+        assert no_of_slices >= 0, 'no of slices per year must be greater than zero'
         assert simulation_rounds >= 0, 'simulation rounds must be greater than zero'
 
         self.S0 = float(S0)
@@ -54,10 +54,12 @@ class MonteCarloOptionPricing:
     def vasicek_model(self, r0, alpha, b, interest_vol):
         """
         vasicek model for interest rate simulation
+        this is the continuous-time analog of the AR(1) process.
+        Interest rate in the vesicke model can be negative.
         :param r0: current interest rate
-        :param alpha:
-        :param b:
-        :param interest_vol:
+        :param alpha: speed of mean-reversion
+        :param b: risk-free rate is mean-reverting to b
+        :param interest_vol: interest rate volatility (standard deviation)
         :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
@@ -66,7 +68,8 @@ class MonteCarloOptionPricing:
         for i in range(1, self.no_of_slices):
             self.interest_array[:, i] = b + np.exp(-alpha / self.no_of_slices) * (
                     self.interest_array[:, i - 1] - b) + np.sqrt(
-                interest_vol ** 2 / (2 * alpha) * (1 - np.exp(-2 * alpha / self.no_of_slices)))
+                interest_vol ** 2 / (2 * alpha) * (1 - np.exp(-2 * alpha / self.no_of_slices))
+            ) * self.interest_z_t[:, i]
 
         # re-define the interest rate array
         self.r = self.interest_array
@@ -299,15 +302,16 @@ class MonteCarloOptionPricing:
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
 
-        self.dis_factor = np.exp(- self.r * self.h)  # discount factor per time time interval
-
         if option_type == 'call':
             self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
         elif option_type == 'put':
             self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
 
-        self.cashflow_matrix = np.zeros_like = (self.intrinsic_val)
-        self.cashflow_matrix[:, -1] = self.intrinsic_val[:, -1]
+        cf = self.intrinsic_val[:, -1]
+        dis_factor = np.exp(- self.r)
+
+        stopping_rule = np.zeros_like(self.price_array)
+        stopping_rule[:, -1] = np.where(self.intrinsic_val[:, -1] > 0, 1, 0)
 
         # Longstaff and Schwartz iteration
         for t in range(self.no_of_slices - 2, 0, -1):  # fill out the value table from backwards
@@ -318,30 +322,32 @@ class MonteCarloOptionPricing:
             elif option_type == 'put':
                 itm_path = np.where(self.price_array[:, t] < self.K)
 
-            Y = self.cashflow_matrix[:, t + 1] * self.dis_factor[:, t + 1]
-            Y = Y[itm_path]
+            cf = cf * dis_factor[:, t + 1]
+            Y = cf[itm_path]
+            X = self.price_array[itm_path, t]
 
-            X = self.price_array[:, t]
-            X = X[itm_path]
+            self.rg = np.polyfit(x=X[0], y=Y, deg=poly_degree)  # regression fitting
+            self.hold_val = np.polyval(p=self.rg, x=X[0])  # conditional expectation E[Y|X]
 
-            self.rg = np.polyfit(x=X, y=Y, deg=poly_degree)  # regression fitting
-            self.hold_val = np.polyval(p=self.rg, x=self.price_array[itm_path, t])  # regression estimated value
+            cf[itm_path] = self.hold_val
 
             # determine hold or exercise
-            self.cashflow_matrix[itm_path, t] = np.where(self.intrinsic_val[itm_path, t] > self.hold_val,
-                                                         self.intrinsic_val[itm_path, t], 0)
+            stopping_rule[:, t] = np.where(self.intrinsic_val[:, t] > cf, 1, 0)
+            stopping_rule[np.where(self.intrinsic_val[:, t] > cf), (t + 1):] = 0
 
-            # for those exercise path, put all future cashflow to be 0
-            self.cashflow_matrix[itm_path, (t + 1):] = np.where(self.intrinsic_val[itm_path, t] > self.hold_val, 0,
-                                                                self.cashflow_matrix[itm_path, t + 1])
+            cf = np.where(self.intrinsic_val[:, t] > cf,
+                          self.intrinsic_val[:, t], cf)
 
-        dcf = self.cashflow_matrix * self.dis_factor
-        self.option_val = np.average(dcf)
-        self.am_std_error = np.std(dcf.sum(axis=1)) / np.sqrt(self.simulation_rounds)
+            # roll over the discount factor
+            dis_factor[:, t + 1] = dis_factor[:, t + 1] ** (t + 1)
+
+        simulation_vals = (self.intrinsic_val * stopping_rule * dis_factor).sum(axis=1)
+        self.option_val = np.average(simulation_vals)
+        self.am_std_error = np.std(simulation_vals) / np.sqrt(self.simulation_rounds)
 
         print('-' * 64)
         print(
-            " American %s Long Staff method (assume polynomial fit)"
+            " American %s Longstaff-Schwartz method (assume polynomial fit)"
             " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n"
             " Option Value %4.3f \n Standard Error %4.5f " % (
                 option_type, poly_degree, self.S0, self.K, self.option_val, self.am_std_error
