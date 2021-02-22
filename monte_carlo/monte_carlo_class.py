@@ -18,7 +18,7 @@ class MonteCarloOptionPricing:
         :param S0: current price of the underlying asset (e.g. stock)
         :param K: exercise price
         :param T: time to maturity, in years, can be float
-        :param r: interest rate, here we assume constant interest rate model
+        :param r: interest rate, by default we assume constant interest rate model
         :param sigma: volatility (in standard deviation) of the asset annual returns
         :param div_yield: annual dividend yield
         :param simulation_rounds: in general, monte carlo option pricing requires many simulations
@@ -41,10 +41,10 @@ class MonteCarloOptionPricing:
         self.no_of_slices = int(no_of_slices)
         self.simulation_rounds = int(simulation_rounds)
 
-        self.r = np.full((self.simulation_rounds, self.no_of_slices), r / (self.T * self.no_of_slices))
-        self.sigma = np.full((self.simulation_rounds, self.no_of_slices), sigma)
-
         self.h = self.T / self.no_of_slices
+
+        self.r = np.full((self.simulation_rounds, self.no_of_slices), r * self.h)
+        self.sigma = np.full((self.simulation_rounds, self.no_of_slices), sigma)
 
         self.terminal_prices = []
 
@@ -63,7 +63,7 @@ class MonteCarloOptionPricing:
         :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
 
         for i in range(1, self.no_of_slices):
             self.interest_array[:, i] = b + np.exp(-alpha / self.no_of_slices) * (
@@ -85,9 +85,10 @@ class MonteCarloOptionPricing:
         :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
 
-        self.degree_freedom = 4 * b * alpha / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
+        # CIR noncentral chi-square distribution degree of freedom
+        self.degree_freedom = 4 * b * alpha / interest_vol ** 2
 
         for i in range(1, self.no_of_slices):
             self.Lambda = (4 * alpha * np.exp(-alpha / self.no_of_slices) * self.interest_array[:, i - 1] / (
@@ -116,7 +117,7 @@ class MonteCarloOptionPricing:
         self.df_v = 4 * b_v * alpha_v / asset_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
 
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 / (self.T * self.no_of_slices))
+        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
 
         self.vol_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
         self.vol_array = np.full((self.simulation_rounds, self.no_of_slices), v0 / (self.T * self.no_of_slices))
@@ -228,7 +229,7 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.maximum((self.terminal_prices - self.K), 0.0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
@@ -253,7 +254,7 @@ class MonteCarloOptionPricing:
         else:
             self.european_call_value = empirical_call
 
-        self.put_value = self.european_call_value + np.exp(-np.sum(self.r, axis=1) * self.T) * self.K - np.exp(
+        self.put_value = self.european_call_value + np.exp(-np.sum(self.r, axis=1)) * self.K - np.exp(
             -self.div_yield * self.T) * self.S0
 
         return self.put_value
@@ -276,9 +277,9 @@ class MonteCarloOptionPricing:
             self.terminal_profit = np.maximum((self.K - average_prices), 0.0)
 
         if avg_method == 'arithmetic':
-            self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+            self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         elif avg_method == 'geometric':
-            self.expectation = sts.gmean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+            self.expectation = sts.gmean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
 
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
@@ -307,8 +308,11 @@ class MonteCarloOptionPricing:
         elif option_type == 'put':
             self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
 
+        # last day cashflow == last day intrinsic value
         cf = self.intrinsic_val[:, -1]
-        dis_factor = np.exp(- self.r)
+
+        # per period discount factor
+        discount_table = np.exp(np.cumsum(-self.r, axis=1))
 
         stopping_rule = np.zeros_like(self.price_array)
         stopping_rule[:, -1] = np.where(self.intrinsic_val[:, -1] > 0, 1, 0)
@@ -317,45 +321,44 @@ class MonteCarloOptionPricing:
         for t in range(self.no_of_slices - 2, 0, -1):  # fill out the value table from backwards
             # find out in-the-money path to better estimate the conditional expectation function
             # where exercise is relevant and significantly improves the efficiency of the algorithm
-            if option_type == 'call':
-                itm_path = np.where(self.price_array[:, t] > self.K)
-            elif option_type == 'put':
-                itm_path = np.where(self.price_array[:, t] < self.K)
+            itm_path = np.where(self.intrinsic_val[:, t] > 0)  # <==> self.price_array[:, t] vs. self.K
 
-            cf = cf * dis_factor[:, t + 1]
+            cf = cf * np.exp(-self.r[:, t + 1])
             Y = cf[itm_path]
             X = self.price_array[itm_path, t]
 
-            self.rg = np.polyfit(x=X[0], y=Y, deg=poly_degree)  # regression fitting
-            self.hold_val = np.polyval(p=self.rg, x=X[0])  # conditional expectation E[Y|X]
+            # initialize continuation value
+            hold_val = np.zeros(shape=self.simulation_rounds)
+            # if there is only 5 in-the-money paths (most likely appear in out-of-the-money options
+            # then simply assume that value of holding = 0.
+            # otherwise, run regression and compute conditional expectation E[Y|X].
+            if len(itm_path) > 5:
+                rg = np.polyfit(x=X[0], y=Y, deg=poly_degree)  # regression fitting
+                hold_val[itm_path] = np.polyval(p=rg, x=X[0])  # conditional expectation E[Y|X]
 
-            cf[itm_path] = self.hold_val
+            # 1 <==> exercise, 0 <==> hold
+            stopping_rule[:, t] = np.where(self.intrinsic_val[:, t] > hold_val, 1, 0)
+            # if exercise @ t, all future stopping rules = 0 as the option contract is exercised.
+            stopping_rule[np.where(self.intrinsic_val[:, t] > hold_val), (t + 1):] = 0
 
-            # determine hold or exercise
-            stopping_rule[:, t] = np.where(self.intrinsic_val[:, t] > cf, 1, 0)
-            stopping_rule[np.where(self.intrinsic_val[:, t] > cf), (t + 1):] = 0
+            # cashflow @ t, if hold, cf = 0, if exercise, cf = intrinsic value @ t.
+            cf = np.where(self.intrinsic_val[:, t] > 0, self.intrinsic_val[:, t], 0)
 
-            cf = np.where(self.intrinsic_val[:, t] > cf,
-                          self.intrinsic_val[:, t], cf)
-
-            # roll over the discount factor
-            dis_factor[:, t + 1] = dis_factor[:, t + 1] ** (t + 1)
-
-        simulation_vals = (self.intrinsic_val * stopping_rule * dis_factor).sum(axis=1)
-        self.option_val = np.average(simulation_vals)
-        self.am_std_error = np.std(simulation_vals) / np.sqrt(self.simulation_rounds)
+        simulation_vals = (self.intrinsic_val * stopping_rule * discount_table).sum(axis=1)
+        self.expectation = np.average(simulation_vals)
+        self.standard_error = np.std(simulation_vals) / np.sqrt(self.simulation_rounds)
 
         print('-' * 64)
         print(
             " American %s Longstaff-Schwartz method (assume polynomial fit)"
             " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n"
             " Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, poly_degree, self.S0, self.K, self.option_val, self.am_std_error
+                option_type, poly_degree, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
 
-        return self.option_val, self.am_std_error
+        return self.expectation, self.standard_error
 
     def down_and_in_parisian_monte_carlo(self, barrier_price, option_type, barrier_condition=1):
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
@@ -378,7 +381,7 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, self.intrinsic_val[:, -1], 0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
@@ -413,7 +416,7 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
@@ -448,7 +451,7 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, self.intrinsic_val[:, -1], 0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
@@ -481,7 +484,7 @@ class MonteCarloOptionPricing:
 
         self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
@@ -507,7 +510,7 @@ class MonteCarloOptionPricing:
         elif option_type == "put":
             self.terminal_profit = np.maximum((self.K - self.min_price), 0.0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1) * self.T))
+        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)

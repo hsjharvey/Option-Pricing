@@ -16,6 +16,8 @@ sigma = 0.25  # e.g. volatility = 5%
 div_yield = 0.0  # e.g. dividend yield = 1%
 no_of_slice = 252  # no. of slices PER YEAR e.g. quarterly adjusted or 252 trading days adjusted
 
+option_type = "put"  # call or put
+
 barrier_price = 80.0  # barrier level for barrier options
 barrier_condition = 21  # no.of consecutive trading days required for parisian options
 
@@ -35,9 +37,9 @@ MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield,
 MT.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
 MT.european_call()
-MT.asian_avg_price(avg_method='arithmetic', option_type='call')
-MT.american_option_long_schwartz(poly_degree=2, option_type='put')
-MT.down_and_in_parisian_monte_carlo(barrier_price=barrier_price, option_type='call',
+MT.asian_avg_price(avg_method='arithmetic', option_type=option_type)
+MT.american_option_long_schwartz(poly_degree=2, option_type=option_type)
+MT.down_and_in_parisian_monte_carlo(barrier_price=barrier_price, option_type=option_type,
                                     barrier_condition=barrier_condition)
 
 MT.look_back_european()
