@@ -7,11 +7,12 @@
 
 import numpy as np
 import scipy.stats as sts
+from typing import Tuple
 
 
 class MonteCarloOptionPricing:
-    def __init__(self, r, S0, K, T, mue, sigma, div_yield=0.0, simulation_rounds=10000, no_of_slices=4,
-                 fix_random_seed=False):
+    def __init__(self, r, S0: float, K: float, T: float, mue: float, sigma: float, div_yield: float = 0.0,
+                 simulation_rounds: int = 10000, no_of_slices: int = 4, fix_random_seed: bool = False):
         """
         An important reminder, here the models rely on the assumption of constant interest rate and volatility.
 
@@ -44,6 +45,8 @@ class MonteCarloOptionPricing:
         self.h = self.T / self.no_of_slices
 
         self.r = np.full((self.simulation_rounds, self.no_of_slices), r * self.h)
+        self.discount_table = np.exp(np.cumsum(-self.r, axis=1))
+
         self.sigma = np.full((self.simulation_rounds, self.no_of_slices), sigma)
 
         self.terminal_prices = []
@@ -51,7 +54,7 @@ class MonteCarloOptionPricing:
         if fix_random_seed:
             np.random.seed(15000)
 
-    def vasicek_model(self, r0, alpha, b, interest_vol):
+    def vasicek_model(self, r0: float, alpha: float, b: float, interest_vol: float) -> np.ndarray:
         """
         vasicek model for interest rate simulation
         this is the continuous-time analog of the AR(1) process.
@@ -76,7 +79,7 @@ class MonteCarloOptionPricing:
 
         return self.interest_array
 
-    def Cox_Ingersoll_Ross_model(self, r0, alpha, b, interest_vol):
+    def cox_ingersoll_ross_model(self, r0: float, alpha: float, b: float, interest_vol: float) -> np.ndarray:
         """
         if asset volatility is stochastic
         incorporate term structure to model risk free rate (r)
@@ -105,7 +108,8 @@ class MonteCarloOptionPricing:
 
         return self.interest_array
 
-    def CIR_Heston(self, r0, alpha_r, b_r, interest_vol, v0, alpha_v, b_v, asset_vol):
+    def CIR_heston(self, r0: float, alpha_r: float, b_r: float, interest_vol: float, v0: float, alpha_v: float,
+                   b_v: float, asset_vol: float) -> Tuple[np.ndarray, np.ndarray]:
         """
         if asset volatility is stochastic
         incorporate term structure to model risk free rate (u)
@@ -149,7 +153,7 @@ class MonteCarloOptionPricing:
 
         return self.interest_z_t, self.vol_array
 
-    def stock_price_simulation(self):
+    def stock_price_simulation(self) -> Tuple[np.ndarray, float]:
         """
         :return:
         """
@@ -181,7 +185,8 @@ class MonteCarloOptionPricing:
 
         return self.stock_price_expectation, self.stock_price_standard_error
 
-    def stock_price_simulation_with_poisson_jump(self, jump_alpha, jump_std, poisson_lambda):
+    def stock_price_simulation_with_poisson_jump(self, jump_alpha: float, jump_std: float, poisson_lambda: float) -> \
+            Tuple[np.ndarray, float]:
         self.z_t_stock = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
         self.price_array = np.zeros((self.simulation_rounds, self.no_of_slices))
         self.price_array[:, 0] = self.S0
@@ -224,7 +229,7 @@ class MonteCarloOptionPricing:
 
         return self.stock_price_expectation, self.stock_price_standard_error
 
-    def european_call(self):
+    def european_call(self) -> Tuple[float, float]:
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
 
         self.terminal_profit = np.maximum((self.terminal_prices - self.K), 0.0)
@@ -234,8 +239,8 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " European call monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Call Option Value %4.3f \n Standard Error %4.5f " % (
+            " European call monte carlo \n S0 %4.1f \n K %2.1f \n"
+            " Call Option Value %4.3f \n Standard Error %4.5f " % (
                 self.S0, self.K, self.expectation, self.standard_error
             )
         )
@@ -243,7 +248,7 @@ class MonteCarloOptionPricing:
 
         return self.expectation, self.standard_error
 
-    def european_put(self, empirical_call=None):
+    def european_put(self, empirical_call: float or None = None) -> float:
         """
         Use put call parity (incl. continuous dividend) to calculate the put option value
         :param empirical_call: can be calculated or observed call option value
@@ -259,7 +264,7 @@ class MonteCarloOptionPricing:
 
         return self.put_value
 
-    def asian_avg_price(self, avg_method='arithmetic', option_type='call'):
+    def asian_avg_price_option(self, avg_method: str = 'arithmetic', option_type: str = 'call') -> Tuple[float, float]:
         """
         Asian option using average price method
         Arithmetic average
@@ -285,14 +290,17 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Asian %s monte carlo arithmetic average \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
+            " Asian %s monte carlo arithmetic average \n S0 %4.1f \n K %2.1f \n"
+            " Option Value %4.3f \n Standard Error %4.5f " % (
                 option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
 
-    def american_option_long_schwartz(self, poly_degree=2, option_type='call'):
+        return self.expectation, self.standard_error
+
+    def american_option_longstaff_schwartz(self, poly_degree: int = 2, option_type: str = 'call') -> \
+            Tuple[float, float]:
         """
         American option
         Longstaff and Schwartz method
@@ -310,9 +318,6 @@ class MonteCarloOptionPricing:
 
         # last day cashflow == last day intrinsic value
         cf = self.intrinsic_val[:, -1]
-
-        # per period discount factor
-        discount_table = np.exp(np.cumsum(-self.r, axis=1))
 
         stopping_rule = np.zeros_like(self.price_array)
         stopping_rule[:, -1] = np.where(self.intrinsic_val[:, -1] > 0, 1, 0)
@@ -344,7 +349,7 @@ class MonteCarloOptionPricing:
             # cashflow @ t, if hold, cf = 0, if exercise, cf = intrinsic value @ t.
             cf = np.where(self.intrinsic_val[:, t] > 0, self.intrinsic_val[:, t], 0)
 
-        simulation_vals = (self.intrinsic_val * stopping_rule * discount_table).sum(axis=1)
+        simulation_vals = (self.intrinsic_val * stopping_rule * self.discount_table).sum(axis=1)
         self.expectation = np.average(simulation_vals)
         self.standard_error = np.std(simulation_vals) / np.sqrt(self.simulation_rounds)
 
@@ -360,145 +365,67 @@ class MonteCarloOptionPricing:
 
         return self.expectation, self.standard_error
 
-    def down_and_in_parisian_monte_carlo(self, barrier_price, option_type, barrier_condition=1):
-        assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
-        assert type(barrier_condition) is int, 'barrier condition must be integer, i.e. how many consecutive days'
+    def knock_out(self, option_type: str, barrier_price: float, barrier_type: str,
+                  parisian_barrier_days: int or None = None) -> Tuple[float, float]:
+        pass
 
-        self.check = np.where(self.price_array <= barrier_price, 1, 0)
-        self.terminal_profit = np.zeros(self.simulation_rounds)
+    def barrier_option(self, option_type: str, barrier_price: float, barrier_type: str, barrier_direction: str,
+                       parisian_barrier_days: int or None = None) -> Tuple[float, float]:
+        assert option_type == 'call' or option_type == 'put', 'option type must be either call or put'
+        assert barrier_type == "knock-in" or barrier_type == "knock-out", 'type must be either knock-in or knock-out'
+        assert barrier_direction == "up" or barrier_direction == "down", 'direction must be either up or down'
+        if barrier_direction == "up":
+            barrier_check = np.where(self.price_array >= barrier_price, 1, 0)
 
-        # parisian check
-        self.check_final = np.zeros((self.simulation_rounds, self.no_of_slices - barrier_condition))
-        for i in range(0, self.no_of_slices - barrier_condition):
-            self.check_final[:, i] = np.where(
-                np.sum(self.check[:, i:i + barrier_condition], axis=1) >= barrier_condition,
-                1, 0)
+            if parisian_barrier_days is not None:
+                days_to_slices = int(parisian_barrier_days * self.no_of_slices / (self.T * 252))
+                parisian_barrier_check = np.zeros((self.simulation_rounds, self.no_of_slices - days_to_slices))
+                for i in range(0, self.no_of_slices - days_to_slices):
+                    parisian_barrier_check[:, i] = np.where(
+                        np.sum(barrier_check[:, i:i + days_to_slices], axis=1) >= parisian_barrier_days, 1, 0
+                    )
+
+                barrier_check = parisian_barrier_check
+
+        elif barrier_direction == "down":
+            barrier_check = np.where(self.price_array <= barrier_price, 1, 0)
+
+            if parisian_barrier_days is not None:
+                days_to_slices = int(parisian_barrier_days * self.no_of_slices / (self.T * 252))
+                parisian_barrier_check = np.zeros((self.simulation_rounds, self.no_of_slices - days_to_slices))
+                for i in range(0, self.no_of_slices - days_to_slices):
+                    parisian_barrier_check[:, i] = np.where(
+                        np.sum(barrier_check[:, i:i + days_to_slices], axis=1) >= parisian_barrier_days, 1, 0
+                    )
+
+                barrier_check = parisian_barrier_check
 
         if option_type == 'call':
             self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
         elif option_type == 'put':
             self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
 
-        self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, self.intrinsic_val[:, -1], 0)
+        if barrier_type == "knock-in":
+            self.terminal_profit = np.where(np.sum(barrier_check, axis=1) >= 1, self.intrinsic_val[:, -1], 0)
+        elif barrier_type == "knock-out":
+            self.terminal_profit = np.where(np.sum(barrier_check, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
 
         self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
         print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
+            " Barrier european %s \n Type: %s \n Direction: %s @ %s \n S0 %4.1f \n K %2.1f \n"
+            " Option Value %4.3f \n Standard Error %4.5f " % (
+                option_type, barrier_type, barrier_direction, barrier_price,
+                self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
 
         return self.expectation, self.standard_error
 
-    def down_and_out_parisian_monte_carlo(self, barrier_price, option_type, barrier_condition=1):
-        assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
-        assert type(barrier_condition) is int, 'barrier condition must be integer, i.e. how many consecutive days'
-
-        self.check = np.where(self.price_array <= barrier_price, 1, 0)
-        self.terminal_profit = np.zeros(self.simulation_rounds)
-
-        # parisian check
-        self.check_final = np.zeros((self.simulation_rounds, self.no_of_slices - barrier_condition))
-        for i in range(0, self.no_of_slices - barrier_condition):
-            self.check_final[:, i] = np.where(
-                np.sum(self.check[:, i:i + barrier_condition], axis=1) >= barrier_condition,
-                1, 0)
-
-        if option_type == 'call':
-            self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
-        elif option_type == 'put':
-            self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
-
-        self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
-
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
-        self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
-
-        print('-' * 64)
-        print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
-            )
-        )
-        print('-' * 64)
-
-        return self.expectation, self.standard_error
-
-    def up_and_in_parisian_monte_carlo(self, barrier_price, barrier_condition, option_type):
-        assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
-        assert type(barrier_condition) is int, 'barrier condition must be integer, i.e. how many consecutive days'
-
-        self.check = np.where(self.price_array >= barrier_price, 1, 0)
-        self.terminal_profit = np.zeros(self.simulation_rounds)
-
-        # parisian check
-        self.check_final = np.zeros((self.simulation_rounds, self.no_of_slices - barrier_condition))
-        for i in range(0, self.no_of_slices - barrier_condition):
-            self.check_final[:, i] = np.where(
-                np.sum(self.check[:, i:i + barrier_condition], axis=1) >= barrier_condition,
-                1, 0)
-
-        if option_type == 'call':
-            self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
-        elif option_type == 'put':
-            self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
-
-        self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, self.intrinsic_val[:, -1], 0)
-
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
-        self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
-
-        print('-' * 64)
-        print(
-            " down-and-in %s monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
-            )
-        )
-        print('-' * 64)
-
-    def up_and_out_parisian_monte_carlo(self, barrier_price, barrier_condition, option_type):
-        assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
-        assert type(barrier_condition) is int, 'barrier condition must be integer, i.e. how many consecutive days'
-
-        self.check = np.where(self.price_array >= barrier_price, 1, 0)
-        self.terminal_profit = np.zeros(self.simulation_rounds)
-
-        # parisian check
-        self.check_final = np.zeros((self.simulation_rounds, self.no_of_slices - barrier_condition))
-        for i in range(0, self.no_of_slices - barrier_condition):
-            self.check_final[:, i] = np.where(
-                np.sum(self.check[:, i:i + barrier_condition], axis=1) >= barrier_condition,
-                1, 0)
-
-        if option_type == 'call':
-            self.intrinsic_val = np.maximum((self.price_array - self.K), 0.0)
-        elif option_type == 'put':
-            self.intrinsic_val = np.maximum((self.K - self.price_array), 0.0)
-
-        self.terminal_profit = np.where(np.sum(self.check_final, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
-
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
-        self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
-
-        print('-' * 64)
-        print(
-            " down-and-in European %s monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
-            )
-        )
-        print('-' * 64)
-
-        return self.expectation, self.standard_error
-
-    def look_back_european(self, option_type='call'):
+    def look_back_european(self, option_type: str = 'call') -> Tuple[float, float]:
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
 
@@ -515,9 +442,10 @@ class MonteCarloOptionPricing:
 
         print('-' * 64)
         print(
-            " Lookback european %s monte carlo \n S0 %4.1f \n K %2.1f \n "
-            "Option Value %4.3f \n Standard Error %4.5f " % (
+            " Lookback european %s monte carlo \n S0 %4.1f \n K %2.1f \n"
+            " Option Value %4.3f \n Standard Error %4.5f " % (
                 option_type, self.S0, self.K, self.expectation, self.standard_error
             )
         )
         print('-' * 64)
+        return self.expectation, self.standard_error
