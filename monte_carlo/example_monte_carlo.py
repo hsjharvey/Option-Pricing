@@ -4,7 +4,7 @@
 # Permission given to modify the code as long as you keep this        #
 # declaration at the top                                              #
 #######################################################################
-from monte_carlo.monte_carlo_class import *
+from monte_carlo_class import *
 
 # initialize parameters
 S0 = 100.0  # e.g. spot price = 35
@@ -23,7 +23,13 @@ parisian_barrier_days = 21  # no.of consecutive trading days required for parisi
 simulation_rounds = 100000  # For monte carlo simulation, a large number of simulations required
 
 # initialize
-MT = MonteCarloOptionPricing(r, S0, K, T, mue, sigma, div_yield,
+MT = MonteCarloOptionPricing(S0=S0,
+                             K=K,
+                             T=T,
+                             r=r,
+                             mue=mue,
+                             sigma=sigma,
+                             div_yield=div_yield,
                              simulation_rounds=simulation_rounds,
                              no_of_slices=no_of_slice,
                              fix_random_seed=True)

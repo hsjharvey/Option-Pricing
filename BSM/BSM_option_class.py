@@ -5,6 +5,7 @@
 #######################################################################
 from math import log, sqrt, exp
 from scipy import stats
+from typing import Tuple
 
 
 class BSMOptionValuation:
@@ -25,19 +26,9 @@ class BSMOptionValuation:
         volatility factor in diffusion term
     div_yield: float
         dividend_yield, in percentage %, default = 0.0%
-
-
-    Methods:
-    ==========
-    value: float
-        return present value of call option
-    vega: float
-        return vega of call option
-    imp_vol: float
-        return implied volatility given option quote
     """
 
-    def __init__(self, S0, K, T, r, sigma, div_yield=0.0):
+    def __init__(self, S0: float, K: float, T: float, r: float, sigma: float, div_yield: float = 0.0):
         assert sigma >= 0, 'volatility cannot be less than zero'
         assert S0 >= 0, 'initial stock price cannot be less than zero'
         assert T >= 0, 'time to maturity cannot be less than zero'
@@ -54,7 +45,7 @@ class BSMOptionValuation:
                 self.sigma * sqrt(self.T)))
         self.d2 = self.d1 - self.sigma * sqrt(self.T)
 
-    def call_value(self, observed_put_price=None):
+    def call_value(self, observed_put_price: float = None) -> float:
         """
         :return: call option value
         """
@@ -66,7 +57,7 @@ class BSMOptionValuation:
 
         return call_value
 
-    def delta(self):
+    def delta(self) -> Tuple[float, float]:
         """
         Delta measures the change in the option price for a $1 change in the stock price
         :return: delta of the option
@@ -76,7 +67,7 @@ class BSMOptionValuation:
 
         return delta_call, delta_put
 
-    def gamma(self):
+    def gamma(self) -> float:
         """
         Gamma measures the change in delta when the stock price changes
         :return: gamma of the option
@@ -85,13 +76,13 @@ class BSMOptionValuation:
 
         return gamma
 
-    def theta(self):
+    def theta(self) -> Tuple[float, float]:
         """
         Theta measures the change in the option price with respect to calendar time (t ),
         holding fixed time to expiration (T).
 
         If time to expiration is measured in years, theta will be the annualized change in the option value.
-        To obtain a per-day theta, divide by 365.
+        To obtain a per-day theta, divide by 252.
         :return: theta of the option
         """
         part1 = self.div_yield * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(self.d1)
@@ -104,7 +95,7 @@ class BSMOptionValuation:
 
         return theta_call, theta_put
 
-    def vega(self):
+    def vega(self) -> float:
         """
         Vega measures the change in the option price when volatility changes. Some writers also
         use the terms lambda or kappa to refer to this measure:
@@ -116,7 +107,7 @@ class BSMOptionValuation:
 
         return vega
 
-    def rho(self):
+    def rho(self) -> Tuple[float, float]:
         """
         Returns: call_rho, put_rho
         -------
@@ -131,7 +122,7 @@ class BSMOptionValuation:
 
         return call_rho, put_rho
 
-    def psi(self):
+    def psi(self) -> Tuple[float, float]:
         """
         Returns: call_psi, put psi
         -------
@@ -144,12 +135,11 @@ class BSMOptionValuation:
 
         return call_psi, put_psi
 
-    def implied_vol(self, observed_call_price, iteration=1000):
+    def implied_vol(self, observed_call_price: float, iteration: int = 1000) -> float:
         """
         Newton-Raphson iterative approach, assuming BSM model
-        :param C0: observed call option value
+
         :param observed_call_price: call price from the market
-        :param sigma_est: estimated volatility, starting value
         :param iteration: no. of iteration
         :return: implied volatility given option price
         """
@@ -159,9 +149,10 @@ class BSMOptionValuation:
 
         return self.sigma
 
-    def put_value(self, observed_call_price=None):
+    def put_value(self, observed_call_price: float = None) -> float:
         """
         Use put call parity (incl. continuous dividend) to calculate the put option value
+
         :return: put option value
         """
         if observed_call_price is None:
@@ -171,7 +162,7 @@ class BSMOptionValuation:
 
         return put_value
 
-    def lookback_BSM(self, option_type, max_share_price, min_share_price):
+    def lookback_BSM(self, option_type: str, max_share_price: float, min_share_price: float) -> float:
         """
         A European lookback call at maturity pays St - min(St).
         A European lookback put at maturity pays max(St) - St.
@@ -180,8 +171,10 @@ class BSMOptionValuation:
         Robert. L. MacDonald: Derivatives Markets (3rd. edition)
         Chapter 23: Exotic Option II
         Formula 23.47 (Exercise)
+
         :param option_type: call, put
-        share_price_max share_price_min
+        :param max_share_price: maximum share price
+        :param min_share_price: minimum share price
         :return: value of lookback option
         """
 

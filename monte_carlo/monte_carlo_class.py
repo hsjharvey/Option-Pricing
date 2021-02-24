@@ -59,6 +59,7 @@ class MonteCarloOptionPricing:
         vasicek model for interest rate simulation
         this is the continuous-time analog of the AR(1) process.
         Interest rate in the vesicke model can be negative.
+
         :param r0: current interest rate
         :param alpha: speed of mean-reversion
         :param b: risk-free rate is mean-reverting to b
@@ -83,9 +84,8 @@ class MonteCarloOptionPricing:
         """
         if asset volatility is stochastic
         incorporate term structure to model risk free rate (r)
-        non central chi-square distribution
+        non central chi-square distribution. \n
         Interest rate in CIR model cannot be negative
-        :return:
         """
         self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
         self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
@@ -110,13 +110,6 @@ class MonteCarloOptionPricing:
 
     def CIR_heston(self, r0: float, alpha_r: float, b_r: float, interest_vol: float, v0: float, alpha_v: float,
                    b_v: float, asset_vol: float) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        if asset volatility is stochastic
-        incorporate term structure to model risk free rate (u)
-        non central chi-square distribution
-        Interest rate in CIR model cannot be negative
-        :return:
-        """
         self.df_r = 4 * b_r * alpha_r / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
         self.df_v = 4 * b_v * alpha_v / asset_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
 
@@ -154,9 +147,6 @@ class MonteCarloOptionPricing:
         return self.interest_z_t, self.vol_array
 
     def stock_price_simulation(self) -> Tuple[np.ndarray, float]:
-        """
-        :return:
-        """
         self.exp_mean = (self.mue - self.div_yield - (self.sigma ** 2.0) * 0.5) * self.h
         self.exp_diffusion = self.sigma * np.sqrt(self.h)
 
@@ -265,11 +255,6 @@ class MonteCarloOptionPricing:
         return self.put_value
 
     def asian_avg_price_option(self, avg_method: str = 'arithmetic', option_type: str = 'call') -> Tuple[float, float]:
-        """
-        Asian option using average price method
-        Arithmetic average
-        :return: asian option value
-        """
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
         assert avg_method == 'arithmetic' or avg_method == 'geometric', 'arithmetic or geometric average?'
@@ -302,11 +287,10 @@ class MonteCarloOptionPricing:
     def american_option_longstaff_schwartz(self, poly_degree: int = 2, option_type: str = 'call') -> \
             Tuple[float, float]:
         """
-        American option
-        Longstaff and Schwartz method
+        American option, Longstaff and Schwartz method
+
         :param poly_degree: x^n, default = 2
         :param option_type: call or put
-        :return:
         """
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
@@ -364,10 +348,6 @@ class MonteCarloOptionPricing:
         print('-' * 64)
 
         return self.expectation, self.standard_error
-
-    def knock_out(self, option_type: str, barrier_price: float, barrier_type: str,
-                  parisian_barrier_days: int or None = None) -> Tuple[float, float]:
-        pass
 
     def barrier_option(self, option_type: str, barrier_price: float, barrier_type: str, barrier_direction: str,
                        parisian_barrier_days: int or None = None) -> Tuple[float, float]:

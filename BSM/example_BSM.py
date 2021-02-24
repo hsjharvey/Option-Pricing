@@ -4,7 +4,7 @@
 # declaration at the top                                              #
 #######################################################################
 
-from BSM.BSM_option_class import *
+from BSM_option_class import *
 
 S0 = 100  # e.g. spot price = 35
 K = 100  # e.g. exercise price = 40
@@ -21,8 +21,8 @@ observed_call_price = 146.75
 observed_put_price = 120
 
 # Calculate call price
-call_price = x.call_value()
-call_price_obs = x.call_value(observed_put_price)
+call_price_cal = x.call_value()  # calculated call price
+call_price_obs = x.call_value(observed_put_price)  # observed call price
 
 # Calculate greeks
 delta = x.delta()
@@ -46,16 +46,17 @@ put_price_obs = x.put_value(observed_call_price=observed_call_price)  # using ob
 lookback_call = x.lookback_BSM(option_type="call", max_share_price=150, min_share_price=50)
 
 # Results
-print("Call price using calculations: " + str(call_price))
-print("Call price using observed put: " + str(call_price_obs))
-print("Delta of the call: " + str(delta[0]) + "    " + "Delta of put: " + str(delta[1]))
-print("Gamma is: " + str(gamma))
-print("Theta of the call: " + str(theta[0]) + "    " + "Theta of put: " + str(theta[1]))
-print("Vega is: " + str(vega))
-print("Rho is: " + str(rho))
-print("Psi is: " + str(psi))
-print("Implied volatility: " + str(implied_volatility))
-print("Put price using the calculated call: " + str(put_price_cal))
-print("Put price using the observed call: " + str(put_price_obs))
 print("=" * 64)
+print("Call price using calculations: %.3f" % call_price_cal)
+print("Call price using observed put: %.3f" % call_price_obs)
+print("Delta of the call: %.3f | put: %.3f" % delta)
+print("Gamma is: %.3f" % gamma)
+print("Theta of the call: %.3f | put: %.3f" % theta)
+print("Vega is: %.3f" % vega)
+print("Rho of the call: %.3f | put: %.3f" % rho)
+print("Psi of the call: %.3f | put: %.3f" % psi)
+print("Implied volatility: %.3f" % implied_volatility)
+print("Put price using the calculated call: %.3f" % put_price_cal)
+print("Put price using the observed call: %.3f" % put_price_obs)
 print("Lookback call price is: " + str(lookback_call))
+print("=" * 64)
