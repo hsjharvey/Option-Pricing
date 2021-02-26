@@ -25,6 +25,16 @@ Reference: this repo is mainly an implementation of the algorithms described in 
 }
 ```
 
+## Binomial Excel Illustration
+
+</br>
+
+<p align="center">
+    <img width="600px" src="./binomial_excel/binomial_illustration.png">
+</p>
+
+</br>
+
 ## Black-Scholes-Merton (BSM) Chapter 12
 How to use: `example_BSM.py`
  * Chapter 12.1: European call `call_value()`, European put `put_value()`
