@@ -6,8 +6,6 @@ The repo is a refactorization (and some extensions) of the code for an assignmen
 > I tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
 > without sacrificing the ability to refer the code back to the equations in the textbook.
 >
-> Although I will not claim that this repo is bug-free, majority outputs are verified with the answers of some questions in the textbook.
->
 > Debug/Improvements/AddOns will be implemented from time to time.
 >
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
