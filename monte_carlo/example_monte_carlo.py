@@ -32,7 +32,8 @@ MT = MonteCarloOptionPricing(S0=S0,
                              div_yield=div_yield,
                              simulation_rounds=simulation_rounds,
                              no_of_slices=no_of_slice,
-                             fix_random_seed=True)
+                             # fix_random_seed=True,
+                             fix_random_seed=500)
 
 # MT.vasicek_model()  # use vasicek model to simulate the interest rate
 # MT.cox_ingersoll_ross_model()  # use Cox_Ingersoll_Ross model to simulate the interest rate

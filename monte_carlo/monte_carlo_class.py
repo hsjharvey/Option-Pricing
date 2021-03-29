@@ -12,7 +12,7 @@ from typing import Tuple
 
 class MonteCarloOptionPricing:
     def __init__(self, r, S0: float, K: float, T: float, mue: float, sigma: float, div_yield: float = 0.0,
-                 simulation_rounds: int = 10000, no_of_slices: int = 4, fix_random_seed: bool = False):
+                 simulation_rounds: int = 10000, no_of_slices: int = 4, fix_random_seed: bool or int = False):
         """
         An important reminder, here the models rely on the assumption of constant interest rate and volatility.
 
@@ -24,14 +24,14 @@ class MonteCarloOptionPricing:
         :param div_yield: annual dividend yield
         :param simulation_rounds: in general, monte carlo option pricing requires many simulations
         :param no_of_slices: between time 0 and time T, the number of slices PER YEAR, e.g. 252 if trading days are required
-        :param fix_random_seed: boolean, True or False
+        :param fix_random_seed: boolean or integer
         """
         assert sigma >= 0, 'volatility cannot be less than zero'
         assert S0 >= 0, 'initial stock price cannot be less than zero'
         assert T >= 0, 'time to maturity cannot be less than zero'
         assert div_yield >= 0, 'dividend yield cannot be less than zero'
-        assert no_of_slices >= 0, 'no of slices per year must be greater than zero'
-        assert simulation_rounds >= 0, 'simulation rounds must be greater than zero'
+        assert no_of_slices >= 0, 'no of slices per year cannot be less than zero'
+        assert simulation_rounds >= 0, 'simulation rounds cannot be less than zero'
 
         self.S0 = float(S0)
         self.K = float(K)
@@ -51,8 +51,11 @@ class MonteCarloOptionPricing:
 
         self.terminal_prices = []
 
-        if fix_random_seed:
-            np.random.seed(15000)
+        if type(fix_random_seed) is bool:
+            if fix_random_seed:
+                np.random.seed(15000)
+        elif type(fix_random_seed) is int:
+            np.random.seed(fix_random_seed)
 
     def vasicek_model(self, r0: float, alpha: float, b: float, interest_vol: float) -> np.ndarray:
         """
