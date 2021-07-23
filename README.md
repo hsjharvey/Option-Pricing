@@ -1,19 +1,19 @@
 # Option Pricing
 The repo is a refactorization (and some extensions) of the code for an assignment in FNCE40009 Advanced Derivative Securities.
-> This repo is mainly designed for those who want to study advanced option pricing, not for commercial use.
-> This is also the reason that the repo is built purely on standard numpy and scipy packages.
+> This repo is mainly designed for those who want to study option pricing.
+> It is built purely on standard numpy and scipy packages.
 >
-> I tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
+> I've tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
 > without sacrificing the ability to refer the code back to the equations in the textbook.
 >
 > Debug/Improvements/AddOns will be implemented from time to time.
 >
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
->
+> If you like it, or it benefits you in some way, kindly give a star :)
 
 </br>
 
-Reference: this repo is mainly an implementation of the algorithms described in the following textbook.
+Reference: the majority of this repo is an implementation of the algorithms described in the following textbook.
 ```
 @book{mcdonald2013derivatives,
   title={Derivatives markets (3rd edition)},
@@ -33,7 +33,7 @@ Reference: this repo is mainly an implementation of the algorithms described in 
 
 </br>
 
-## Black-Scholes-Merton (BSM) Chapter 12
+## Black-Scholes-Merton (BSM)
 How to use: `example_BSM.py`
  * Chapter 12.1: European call `call_value()`, European put `put_value()`
  * Chapter 12.2: (class) `GarmanKohlhagenForex`
@@ -86,7 +86,7 @@ before running `stock_price_simulation()`.
 
 </br>
 
-## References:
+## More References:
 * Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. Journal of financial economics, 3(1-2), 125-144.
 * Garman, M. B. and Kohlhagen, S. W. (1983). "Foreign Currency Option Values." Journal of International Money and Finance 2, 231-237.
 * Longstaff, F. A., & Schwartz, E. S. (2001). Valuing American options by simulation: a simple least-squares approach. The review of financial studies, 14(1), 113-147.
