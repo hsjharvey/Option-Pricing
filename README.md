@@ -31,7 +31,7 @@ Reference: the majority of this repo is an implementation of the algorithms desc
     <img width="600px" src="./binomial_excel/binomial_illustration.png">
 </p>
 
-</br>
+<br/>
 
 ## Black-Scholes-Merton (BSM)
 How to use: `example_BSM.py`
@@ -40,7 +40,7 @@ How to use: `example_BSM.py`
  * Chapter 12.5: implied volatility assume BSM model `imp_vol()`
  * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`, `rho()`, `psi()`
 
-</br>
+<br/>
 
 
 ## Monte Carlo Simulation
@@ -48,7 +48,7 @@ How to use: `example_monte_carlo.py`
 * Chapter 18 & 19.3: `stock_price_simulation()`
 * Chapter 19.8: `stock_price_simulation_with_poisson_jump()`
 
-</br>
+<br/>
 
 Final predicted price is the average of all the simulated price at time T (column T).
 
@@ -84,9 +84,14 @@ before running `stock_price_simulation()`.
 * Chapter 14 & 23: exotic options, e.g. `barrier_option()`
 * Chapter 23, exercise 23.12: `look_back_european()`
 
-</br>
+<br/>
 
 ## More References:
 * Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. Journal of financial economics, 3(1-2), 125-144.
 * Garman, M. B. and Kohlhagen, S. W. (1983). "Foreign Currency Option Values." Journal of International Money and Finance 2, 231-237.
 * Longstaff, F. A., & Schwartz, E. S. (2001). Valuing American options by simulation: a simple least-squares approach. The review of financial studies, 14(1), 113-147.
+
+<br/>
+
+## For Fun:
+![Alt](https://repobeats.axiom.co/api/embed/b002e14d33548265f332c023aa55c9df8ee9e6c1.svg "Repobeats analytics image")
