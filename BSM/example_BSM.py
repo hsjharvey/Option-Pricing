@@ -1,10 +1,11 @@
+# -*- coding:utf-8 -*-
 #######################################################################
 # Copyright (C) 2016 Shijie Huang (harveyh@student.unimelb.edu.au)    #
 # Permission given to modify the code as long as you keep this        #
 # declaration at the top                                              #
 #######################################################################
 
-from BSM_option_class import *
+from BSM_option_class import BSMOptionValuation
 
 S0 = 100  # e.g. spot price = 35
 K = 100  # e.g. exercise price = 40
@@ -33,7 +34,7 @@ rho = x.rho()
 psi = x.psi()
 
 # Calculate implied volatility
-implied_volatility = x.implied_vol(observed_call_price=observed_call_price, iteration=1000)
+implied_volatility = x.implied_vol(observed_call_price=observed_call_price, num_iterations=1000, tolerance=1e-4)
 
 # Calculate put price
 put_price_cal = x.put_value()  # using calculated call price

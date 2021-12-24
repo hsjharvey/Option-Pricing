@@ -1,10 +1,10 @@
 # -*- coding:utf-8 -*-
 #######################################################################
-# Copyright (C) 2016 Shijie Huang(harveyh@student.unimelb.edu.au)     #
+# Copyright (C) 2016 Shijie Huang (harveyh@student.unimelb.edu.au)    #
 # Permission given to modify the code as long as you keep this        #
 # declaration at the top                                              #
 #######################################################################
-from monte_carlo_class import *
+from monte_carlo_class import MonteCarloOptionPricing
 
 # initialize parameters
 S0 = 100.0  # e.g. spot price = 35

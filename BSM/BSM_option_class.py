@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 #######################################################################
 # Copyright (C) 2016 Shijie Huang (harveyh@student.unimelb.edu.au)    #
 # Permission given to modify the code as long as you keep this        #
@@ -109,13 +110,12 @@ class BSMOptionValuation:
 
     def rho(self) -> Tuple[float, float]:
         """
-        Returns: call_rho, put_rho
-        -------
         Rho is the partial derivative of the option price with respect to the interest rate.
         These expressions for rho assume a change in r of 1.0. We are typically interested in
         evaluating the effect of a change of 0.01 (100 basis points) or 0.0001 (1 basis point). To
         report rho as a change per percentage point in the interest rate, divide this measure by 100.
         To interpret it as a change per basis point, divide by 10,000.
+        :return: call_rho, put_rho
         """
         call_rho = self.T * self.K * exp(-self.r * self.T) * stats.norm.cdf(self.d2)
         put_rho = -self.T * self.K * exp(-self.r * self.T) * stats.norm.cdf(-self.d2)
@@ -124,30 +124,35 @@ class BSMOptionValuation:
 
     def psi(self) -> Tuple[float, float]:
         """
-        Returns: call_psi, put psi
-        -------
         Psi is the partial derivative of the option price with respect to the continuous dividend yield:
         To interpret psi as a price change per percentage point change in the dividend yield, divide
         by 100.
+        :return: call_psi, put_psi
         """
         call_psi = - self.T * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(self.d1)
         put_psi = self.T * self.S0 * exp(-self.div_yield * self.T) * stats.norm.cdf(-self.d1)
 
         return call_psi, put_psi
 
-    def implied_vol(self, observed_call_price: float, iteration: int = 1000) -> float:
+    def implied_vol(self, observed_call_price: float, num_iterations: int = 1000, tolerance: float = 1e-4) -> float:
         """
         Newton-Raphson iterative approach, assuming BSM model
-
         :param observed_call_price: call price from the market
-        :param iteration: no. of iteration
-        :return: implied volatility given option price
+        :param num_iterations: no. of iteration
+        :param tolerance: allows to specify the tolerance level
+        :return: implied volatility given the observed option price
         """
+        implied_vol = self.sigma
 
-        for _ in range(iteration):
-            self.sigma -= (self.call_value() - observed_call_price) / self.vega()
+        for _ in range(num_iterations):
+            new_implied_vol = (self.call_value() - observed_call_price) / self.vega()
 
-        return self.sigma
+            if abs(implied_vol - new_implied_vol) <= tolerance:
+                break
+
+            implied_vol = new_implied_vol
+
+        return implied_vol
 
     def put_value(self, observed_call_price: float = None) -> float:
         """
@@ -171,7 +176,6 @@ class BSMOptionValuation:
         Robert. L. MacDonald: Derivatives Markets (3rd. edition)
         Chapter 23: Exotic Option II
         Formula 23.47 (Exercise)
-
         :param option_type: call, put
         :param max_share_price: maximum share price
         :param min_share_price: minimum share price
