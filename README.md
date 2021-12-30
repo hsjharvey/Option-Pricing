@@ -1,15 +1,15 @@
 # Option Pricing
-The repo is a refactorization (and some extensions) of the code for an assignment in FNCE40009 Advanced Derivative Securities.
+The repository is a refactorization (and some extensions) of the code for an FNCE40009 Advanced Derivative Securities assignment.
 > This repo is mainly designed for those who want to study option pricing.
-> It is built purely on standard numpy and scipy packages.
+> It is built purely on standard NumPy and SciPy packages.
 >
-> I've tried my best to utilize the speed offered by numpy array operation rather than multiple for-loops, 
+> I've tried my best to utilize the speed offered by NumPy array operation rather than multiple for-loops, 
 > without sacrificing the ability to refer the code back to the equations in the textbook.
 >
 > Debug/Improvements/AddOns will be implemented from time to time.
 >
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
-> If you like it, or it benefits you in some way, kindly give a star :)
+> If you like it, or it benefits you in some way, kindly give it a star :)
 
 </br>
 
@@ -50,7 +50,7 @@ How to use: `example_monte_carlo.py`
 
 <br/>
 
-Final predicted price is the average of all the simulated price at time T (column T).
+The final predicted price is the average of all the simulated prices at time T (column T).
 
 | Stock price | h | 2h  | 3h | ... |T-h|T|
 | :---------: |:---------:| -----:| -----:| -----:| -----:|----:|
