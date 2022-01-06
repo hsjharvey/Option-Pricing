@@ -43,12 +43,13 @@ class BSMOptionValuation:
         self.sigma = float(sigma)
         self.div_yield = float(div_yield)
 
-        self._calculate_d1_d2()
+        self.d1, self.d2 = self._calculate_d1_d2()
 
     def _calculate_d1_d2(self):
-        self.d1 = ((log(self.S0 / self.K) + (self.r - self.div_yield + 0.5 * self.sigma ** 2) * self.T) / (
+        d1 = ((log(self.S0 / self.K) + (self.r - self.div_yield + 0.5 * self.sigma ** 2) * self.T) / (
                 self.sigma * sqrt(self.T)))
-        self.d2 = self.d1 - self.sigma * sqrt(self.T)
+        d2 = self.d1 - self.sigma * sqrt(self.T)
+        return self.d1, self.d2
 
     def call_value(self, observed_put_price: float = None) -> float:
         """
@@ -240,6 +241,7 @@ class BSMOptionValuation:
 
         sigma, variance = self.sigma, self.sigma ** 2  # this is the raw volatility of the underlying asset
         r = self.r  # this is the raw interest rate
+        d1, d2 = self.d1, self.d2  # this is the raw d1, d1 for Black-Scholes option pricing
 
         for i in range(I):
             # to calculate adjusted Black-Scholes option value
@@ -260,9 +262,8 @@ class BSMOptionValuation:
             else:
                 option_value += jump_diffusion_scale * self.put_value()
 
-        # re-assign the interest rate and volatility in case other methods need to use the two values.
-        self.sigma = sigma
-        self.r = r
+        # re-assign the original variables in case other methods need to use the two values.
+        self.sigma, self.r, self.d1, self.d2 = sigma, r, d1, d2
 
         return option_value
 
