@@ -37,6 +37,7 @@ Reference: most of this repository implements algorithms described in the follow
 How to use: `example_BSM.py`
  * Chapter 12.1: European call `call_value()`, European put `put_value()`
  * Chapter 12.2: (class) `GarmanKohlhagenForex`
+ * Chapter 21.5: Merton jump diffusion `merton_jump_diffusion()`
  * Chapter 12.5: implied volatility assume BSM model `implied_vol()`
  * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`, `rho()`, `psi()`
 

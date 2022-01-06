@@ -62,7 +62,6 @@ class MonteCarloOptionPricing:
         vasicek model for interest rate simulation
         this is the continuous-time analog of the AR(1) process.
         Interest rate in the vesicke model can be negative.
-
         :param r0: current interest rate
         :param alpha: speed of mean-reversion
         :param b: risk-free rate is mean-reverting to b
@@ -180,6 +179,18 @@ class MonteCarloOptionPricing:
 
     def stock_price_simulation_with_poisson_jump(self, jump_alpha: float, jump_std: float, poisson_lambda: float) -> \
             Tuple[np.ndarray, float]:
+        """
+        jump diffusion model
+        Parameters
+        ----------
+        jump_alpha: jump size mean
+        jump_std: jump size standard deviation
+        poisson_lambda: average number of jumps per year.
+
+        Returns
+        -------
+
+        """
         self.z_t_stock = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
         self.price_array = np.zeros((self.simulation_rounds, self.no_of_slices))
         self.price_array[:, 0] = self.S0

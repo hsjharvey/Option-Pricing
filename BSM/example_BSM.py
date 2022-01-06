@@ -9,8 +9,8 @@ from BSM_option_class import BSMOptionValuation
 
 S0 = 100  # e.g. spot price = 35
 K = 100  # e.g. exercise price = 40
-T = 1.0  # e.g. six months
-r = 0.05  # e.g. risk free rate = 1%
+T = 1.0  # e.g. six months = 0.5
+r = 0.01  # e.g. risk free rate = 1%
 sigma = 0.25  # e.g. volatility = 5%
 div_yield = 0.0  # e.g. dividend yield = 1%
 
@@ -40,6 +40,15 @@ implied_volatility = x.implied_vol(observed_call_price=observed_call_price, num_
 put_price_cal = x.put_value()  # using calculated call price
 put_price_obs = x.put_value(observed_call_price=observed_call_price)  # using observed call price
 
+# with merton jump
+avg_num_jumps = 2  # integer
+# assuming jump size follows a log-normal distribution: ln(jump_size) ~ N(jump_size_mean, jump_size_std)
+jump_size_mean = 0.1  # log(1 + percentage change), e.g. log(close/open) if the day is considered as a jump
+jump_size_std = 0.25
+option_type = "call"
+call_price = x.merton_jump_diffusion(option_type=option_type, avg_num_jumps=avg_num_jumps,
+                                     jump_size_mean=jump_size_mean, jump_size_std=jump_size_std)
+
 # Calculate lookback option price
 # Step 1: simulate stock price over the option life (use Monte Carlo)
 # Step 2: input Max and Min stock price and calculate the lookback option price
@@ -59,5 +68,6 @@ print("Psi of the call: %.3f | put: %.3f" % psi)
 print("Implied volatility: %.3f" % implied_volatility)
 print("Put price using the calculated call: %.3f" % put_price_cal)
 print("Put price using the observed call: %.3f" % put_price_obs)
+print("Call price with Merton jump diffusion model: %.3f" % call_price)
 print("Lookback call price is: " + str(lookback_call))
 print("=" * 64)

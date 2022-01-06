@@ -4,7 +4,8 @@
 # Permission given to modify the code as long as you keep this        #
 # declaration at the top                                              #
 #######################################################################
-from math import log, sqrt, exp
+import numpy as np
+from numpy import log, exp, sqrt
 from scipy import stats
 from typing import Tuple
 
@@ -42,6 +43,9 @@ class BSMOptionValuation:
         self.sigma = float(sigma)
         self.div_yield = float(div_yield)
 
+        self._calculate_d1_d2()
+
+    def _calculate_d1_d2(self):
         self.d1 = ((log(self.S0 / self.K) + (self.r - self.div_yield + 0.5 * self.sigma ** 2) * self.T) / (
                 self.sigma * sqrt(self.T)))
         self.d2 = self.d1 - self.sigma * sqrt(self.T)
@@ -208,6 +212,59 @@ class BSMOptionValuation:
                 1 - 2 * (self.r - self.div_yield) / (self.sigma ** 2))) * stats.norm.cdf(self.w * self.d8))
 
         return self.lb_first_part - self.lb_second_part
+
+    def merton_jump_diffusion(self, option_type: str, avg_num_jumps: int, jump_size_mean: float, jump_size_std: float):
+        """
+        assuming jump size follows a log-normal distribution: ln(jump_size) ~ N(jump_size_mean, jump_size_std)
+        Parameters
+        ----------
+        option_type: (str) call or put
+        avg_num_jumps: (int) how many jumps in T
+        jump_size_mean: (float) ln(jump_size) ~ N(jump_size_mean, jump_size_std)
+        jump_size_std: (float) ln(jump_size) ~ N(jump_size_mean, jump_size_std)
+
+        Returns
+        -------
+
+        """
+        assert option_type == "call" or option_type == "put", "option type must be either call or put"
+
+        LAMBDA = avg_num_jumps
+        I = np.random.poisson(lam=LAMBDA)  # simulate the number of jumps based on poisson distribution
+
+        alpha_j = jump_size_mean
+        sigma_j, variance_j = jump_size_std, jump_size_std ** 2
+
+        LAMBDA_hat = LAMBDA * exp(alpha_j + 0.5 * sigma_j ** 2)
+        option_value = 0
+
+        sigma, variance = self.sigma, self.sigma ** 2  # this is the raw volatility of the underlying asset
+        r = self.r  # this is the raw interest rate
+
+        for i in range(I):
+            # to calculate adjusted Black-Scholes option value
+            # note this is ad hoc
+            self.sigma = sqrt(variance + i * variance_j / self.T)
+            self.r = r - LAMBDA * (exp(alpha_j + 0.5 * sigma_j ** 2) - 1) + i * (alpha_j + 0.5 * sigma_j ** 2) / self.T
+
+            # re-calculate d1 d2 for Black-Scholes option pricing component
+            # note this is ad hoc
+            self._calculate_d1_d2()
+
+            jump_diffusion_scale = exp(-LAMBDA_hat * self.T) * (LAMBDA_hat * self.T) ** i / np.math.factorial(i)
+            print(jump_diffusion_scale)
+            print(self.call_value())
+
+            if option_type == "call":
+                option_value += jump_diffusion_scale * self.call_value()
+            else:
+                option_value += jump_diffusion_scale * self.put_value()
+
+        # re-assign the interest rate and volatility in case other methods need to use the two values.
+        self.sigma = sigma
+        self.r = r
+
+        return option_value
 
 
 class GarmanKohlhagenForex(BSMOptionValuation):
