@@ -48,8 +48,9 @@ class BSMOptionValuation:
     def _calculate_d1_d2(self):
         d1 = ((log(self.S0 / self.K) + (self.r - self.div_yield + 0.5 * self.sigma ** 2) * self.T) / (
                 self.sigma * sqrt(self.T)))
-        d2 = self.d1 - self.sigma * sqrt(self.T)
-        return self.d1, self.d2
+        d2 = d1 - self.sigma * sqrt(self.T)
+
+        return d1, d2
 
     def call_value(self, observed_put_price: float = None) -> float:
         """
