@@ -215,13 +215,20 @@ class BSMOptionValuation:
 
         return self.lb_first_part - self.lb_second_part
 
-    def merton_jump_diffusion(self, option_type: str, avg_num_jumps: int, jump_size_mean: float, jump_size_std: float):
+    def merton_jump_diffusion(self, option_type: str, avg_num_jumps: float, jump_size_mean: float,
+                              jump_size_std: float):
         """
-        assuming jump size follows a log-normal distribution: ln(jump_size) ~ N(jump_size_mean, jump_size_std)
+        Merton closed-form solution for European options with underlying asset jumps
+        assuming jump size follows a log-normal distribution: ln(jump_size) ~ N(jump_size_mean, jump_size_std).
+
+        Notice: the model is fine under a certain set of parameters.
+        The model works properly for sigma_j smaller than a certain level dependent on lam.
+        see: https://github.com/cantaro86/Financial-Models-Numerical-Methods/blob/master/3.1%20Merton%20jump-diffusion%2C%20PIDE%20method.ipynb
+
         Parameters
         ----------
         option_type: (str) call or put
-        avg_num_jumps: (int) how many jumps in T
+        avg_num_jumps: (float) how many jumps in T, can fractional
         jump_size_mean: (float) ln(jump_size) ~ N(jump_size_mean, jump_size_std)
         jump_size_std: (float) ln(jump_size) ~ N(jump_size_mean, jump_size_std)
 
@@ -231,32 +238,32 @@ class BSMOptionValuation:
         """
         assert option_type == "call" or option_type == "put", "option type must be either call or put"
 
-        LAMBDA = avg_num_jumps
-        I = np.random.poisson(lam=LAMBDA)  # simulate the number of jumps based on poisson distribution
+        lam = avg_num_jumps  # Expected number of events occurring in a fixed-time interval (T)
 
         alpha_j = jump_size_mean
         sigma_j, variance_j = jump_size_std, jump_size_std ** 2
 
-        LAMBDA_hat = LAMBDA * exp(alpha_j + 0.5 * sigma_j ** 2)
+        m = exp(alpha_j + 0.5 * variance_j)
+        k = m - 1  # k=E(Y-1)
+        lam_hat = lam * m
+
         option_value = 0
 
         sigma, variance = self.sigma, self.sigma ** 2  # this is the raw volatility of the underlying asset
         r = self.r  # this is the raw interest rate
         d1, d2 = self.d1, self.d2  # this is the raw d1, d1 for Black-Scholes option pricing
 
-        for i in range(I):
+        for i in range(100):
             # to calculate adjusted Black-Scholes option value
             # note this is ad hoc
             self.sigma = sqrt(variance + i * variance_j / self.T)
-            self.r = r - LAMBDA * (exp(alpha_j + 0.5 * sigma_j ** 2) - 1) + i * (alpha_j + 0.5 * sigma_j ** 2) / self.T
+            self.r = r - lam * k + i * (alpha_j + 0.5 * variance_j) / self.T
 
             # re-calculate d1 d2 for Black-Scholes option pricing component
             # note this is ad hoc
             self._calculate_d1_d2()
 
-            jump_diffusion_scale = exp(-LAMBDA_hat * self.T) * (LAMBDA_hat * self.T) ** i / np.math.factorial(i)
-            print(jump_diffusion_scale)
-            print(self.call_value())
+            jump_diffusion_scale = exp(-lam_hat * self.T) * (lam_hat * self.T) ** i / np.math.factorial(i)
 
             if option_type == "call":
                 option_value += jump_diffusion_scale * self.call_value()
