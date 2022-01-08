@@ -365,9 +365,11 @@ class MonteCarloOptionPricing:
 
     def barrier_option(self, option_type: str, barrier_price: float, barrier_type: str, barrier_direction: str,
                        parisian_barrier_days: int or None = None) -> Tuple[float, float]:
-        assert option_type == 'call' or option_type == 'put', 'option type must be either call or put'
-        assert barrier_type == "knock-in" or barrier_type == "knock-out", 'type must be either knock-in or knock-out'
-        assert barrier_direction == "up" or barrier_direction == "down", 'direction must be either up or down'
+        assert option_type == "call" or option_type == "put", 'option type must be either call or put'
+        assert barrier_type == "knock-in" or barrier_type == "knock-out", \
+            'barrier type must be either knock-in or knock-out'
+        assert barrier_direction == "up" or barrier_direction == "down", \
+            'barrier direction must be either up or down'
         if barrier_direction == "up":
             barrier_check = np.where(self.price_array >= barrier_price, 1, 0)
 

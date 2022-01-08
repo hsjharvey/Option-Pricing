@@ -4,6 +4,7 @@
 # Permission given to modify the code as long as you keep this        #
 # declaration at the top                                              #
 #######################################################################
+
 from monte_carlo_class import MonteCarloOptionPricing
 
 # initialize parameters
@@ -22,8 +23,8 @@ parisian_barrier_days = 21  # no.of consecutive trading days required for parisi
 # optional parameter
 simulation_rounds = 100000  # For monte carlo simulation, a large number of simulations required
 
-# initialize
-MT = MonteCarloOptionPricing(S0=S0,
+# initialize instance
+MC = MonteCarloOptionPricing(S0=S0,
                              K=K,
                              T=T,
                              r=r,
@@ -39,15 +40,15 @@ MT = MonteCarloOptionPricing(S0=S0,
 # MT.cox_ingersoll_ross_model()  # use Cox_Ingersoll_Ross model to simulate the interest rate
 # MT.CIR_heston()  # CIR interest rate and Heston model to simulate volatility (sigma)
 
-MT.stock_price_simulation()
+MC.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
-MT.european_call()
-MT.asian_avg_price_option(avg_method='arithmetic', option_type="call")
-MT.american_option_longstaff_schwartz(poly_degree=2, option_type="put")
-MT.barrier_option(option_type="call",
+MC.european_call()
+MC.asian_avg_price_option(avg_method='arithmetic', option_type="call")
+MC.american_option_longstaff_schwartz(poly_degree=2, option_type="put")
+MC.barrier_option(option_type="call",
                   barrier_price=barrier_price,
                   barrier_type="knock-in",
                   barrier_direction="down",
                   parisian_barrier_days=parisian_barrier_days)
 
-MT.look_back_european()
+MC.look_back_european()
