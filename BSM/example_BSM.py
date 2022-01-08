@@ -41,13 +41,13 @@ put_price_cal = x.put_value()  # using calculated call price
 put_price_obs = x.put_value(observed_call_price=observed_call_price)  # using observed call price
 
 # with merton jump
-avg_num_jumps = 0.8  # expected number of events occurring in a fixed-time interval (T)
+avg_num_jumps = 0.8  # poisson lambda: expected number of events occurring in a fixed-time interval (T)
 # assuming jump size follows a log-normal distribution: ln(jump_size) ~ N(jump_size_mean, jump_size_std)
-jump_size_mean = 0.1  # log(1 + percentage change), e.g. log(close/open) if the day is considered as a jump
+jump_size_mean = 0.0  # log(1 + percentage change), e.g. log(close/open) if the day is considered as a jump
 jump_size_std = 0.5
 option_type = "call"
-call_price = x.merton_jump_diffusion(option_type=option_type, avg_num_jumps=avg_num_jumps,
-                                     jump_size_mean=jump_size_mean, jump_size_std=jump_size_std)
+call_price_merton_jump_diffusion = x.merton_jump_diffusion(option_type=option_type, avg_num_jumps=avg_num_jumps,
+                                                           jump_size_mean=jump_size_mean, jump_size_std=jump_size_std)
 
 # Calculate lookback option price
 # Step 1: simulate stock price over the option life (use Monte Carlo)
@@ -68,6 +68,6 @@ print("Psi of the call: %.3f | put: %.3f" % psi)
 print("Implied volatility: %.3f" % implied_volatility)
 print("Put price using the calculated call: %.3f" % put_price_cal)
 print("Put price using the observed call: %.3f" % put_price_obs)
-print("Call price with Merton jump diffusion model: %.3f" % call_price)
+print("Call price with Merton jump diffusion model: %.3f" % call_price_merton_jump_diffusion)
 print("Lookback call price is: " + str(lookback_call))
 print("=" * 64)

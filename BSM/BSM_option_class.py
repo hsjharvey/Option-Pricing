@@ -244,8 +244,8 @@ class BSMOptionValuation:
         sigma_j, variance_j = jump_size_std, jump_size_std ** 2
 
         m = exp(alpha_j + 0.5 * variance_j)
-        k = m - 1  # k=E(Y-1)
         lam_hat = lam * m
+        k = m - 1  # k=E(Y-1)
 
         option_value = 0
 
@@ -253,17 +253,17 @@ class BSMOptionValuation:
         r = self.r  # this is the raw interest rate
         d1, d2 = self.d1, self.d2  # this is the raw d1, d1 for Black-Scholes option pricing
 
-        for i in range(100):
+        for i in range(100):  # infinite series in the textbook, 100 is typically sufficient for convergence
+            jump_diffusion_scale = exp(-lam_hat * self.T) * (lam_hat * self.T) ** i / np.math.factorial(i)
+
             # to calculate adjusted Black-Scholes option value
-            # note this is ad hoc
+            # note this is ad hoc to the construction of this repository
             self.sigma = sqrt(variance + i * variance_j / self.T)
             self.r = r - lam * k + i * (alpha_j + 0.5 * variance_j) / self.T
 
             # re-calculate d1 d2 for Black-Scholes option pricing component
-            # note this is ad hoc
-            self._calculate_d1_d2()
-
-            jump_diffusion_scale = exp(-lam_hat * self.T) * (lam_hat * self.T) ** i / np.math.factorial(i)
+            # note this is ad hoc to the construction of this repository
+            self.d1, self.d2 = self._calculate_d1_d2()
 
             if option_type == "call":
                 option_value += jump_diffusion_scale * self.call_value()
