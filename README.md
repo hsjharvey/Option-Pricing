@@ -11,7 +11,7 @@ assignment.
 > Debug/Improvements/AddOns will be implemented from time to time.
 >
 > If you have any questions or want to report a bug, please open an issue. I am open to any corrections/suggestions.
-> If you like it, or if it benefits you in some way, kindly give it a star 😊
+> If you like it, or if it benefits you in some way, kindly give it a star 😊.
 
 <br/>
 
@@ -42,8 +42,9 @@ How to use: `example_BSM.py`
 
 * Chapter 12.1: European call `call_value()`, European put `put_value()`
 * Chapter 12.2: (class) `GarmanKohlhagenForex`
-* Chapter 21.5: Merton jump diffusion `merton_jump_diffusion()`
 * Chapter 12.5: implied volatility assume BSM model `implied_vol()`
+* Chapter 21.5: Merton jump diffusion `merton_jump_diffusion()`
+* Chapter 22: Exotic options (barrier options) `cash_or_nothing_barrier_options()`
 * Appendix 12.B: `delta()`, `gamma()`, `theta()`, `vega()`, `rho()`, `psi()`
 
 <br/>

@@ -57,7 +57,7 @@ call_price_merton_jump_diffusion = bsm.merton_jump_diffusion(option_type=option_
 lookback_call = bsm.lookback_BSM(option_type="call", max_share_price=150, min_share_price=50)
 
 # cash-or-nothing barrier option: pays $1 when barrier condition is met
-# Barrier options of BSM can be calculated by some extensions of this
+# Barrier options of black_scholes_merton can be calculated by some extensions of this
 cash_or_nothing_barrier = bsm.cash_or_nothing_barrier_options(option_type="call",
                                                               barrier_price=35,
                                                               barrier_type="knock-in",

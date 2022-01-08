@@ -149,7 +149,7 @@ class BSMOptionValuation:
 
     def implied_vol(self, observed_call_price: float, num_iterations: int = 1000, tolerance: float = 1e-4) -> float:
         """
-        Newton-Raphson iterative approach, assuming BSM model
+        Newton-Raphson iterative approach, assuming black_scholes_merton model
         :param observed_call_price: call price from the market
         :param num_iterations: no. of iteration
         :param tolerance: allows to specify the tolerance level
