@@ -5,7 +5,7 @@ assignment.
 > This repository is mainly designed for those who want to study option pricing.
 > It is built purely on standard NumPy and SciPy packages.
 >
-> I've tried my best to utilize the speed offered by NumPy array operation rather than multiple for-loops,
+> I've tried my best to utilize the speed offered by NumPy array operations rather than using multiple for-loops,
 > without sacrificing the ability to refer the code back to the equations in the textbook.
 >
 > Debug/Improvements/AddOns will be implemented from time to time.
@@ -58,7 +58,7 @@ How to use: `example_monte_carlo.py`
 
 <br/>
 
-The final predicted price is the average of all the simulated prices at time T (column T).
+The final predicted price is the average of all simulated prices at time T (column T).
 
 | Stock price S | h | 2h  | 3h | ... |T-h|                T |
 |:-------------:|:---------:| -----:| -----:| -----:| -----:|-----------------:|
