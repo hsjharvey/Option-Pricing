@@ -11,10 +11,12 @@ from typing import Tuple
 
 
 class MonteCarloOptionPricing:
-    def __init__(self, r, S0: float, K: float, T: float, mue: float, sigma: float, div_yield: float = 0.0,
+    def __init__(self, r, S0: float, K: float, T: float, sigma: float, div_yield: float = 0.0,
                  simulation_rounds: int = 10000, no_of_slices: int = 4, fix_random_seed: bool or int = False):
         """
-        An important reminder, here the models rely on the assumption of constant interest rate and volatility.
+        An important reminder, by default the implementation assumes constant interest rate and volatility.
+        To allow for stochastic interest rate and vol, run Vasicek/CIR for stochastic interest rate and
+        run Heston for stochastic volatility.
 
         :param S0: current price of the underlying asset (e.g. stock)
         :param K: exercise price
@@ -36,20 +38,22 @@ class MonteCarloOptionPricing:
         self.S0 = float(S0)
         self.K = float(K)
         self.T = float(T)
-        self.mue = float(mue)
         self.div_yield = float(div_yield)
 
         self.no_of_slices = int(no_of_slices)
         self.simulation_rounds = int(simulation_rounds)
 
-        self.h = self.T / self.no_of_slices
+        self._dt = self.T / self.no_of_slices
 
-        self.r = np.full((self.simulation_rounds, self.no_of_slices), r * self.h)
+        self.mue = r  # under risk-neutral measure, asset expected return = risk-free rate
+        self.r = np.full((self.simulation_rounds, self.no_of_slices), r * self._dt)
         self.discount_table = np.exp(np.cumsum(-self.r, axis=1))
 
         self.sigma = np.full((self.simulation_rounds, self.no_of_slices), sigma)
 
         self.terminal_prices = []
+
+        self.z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
 
         if type(fix_random_seed) is bool:
             if fix_random_seed:
@@ -57,108 +61,105 @@ class MonteCarloOptionPricing:
         elif type(fix_random_seed) is int:
             np.random.seed(fix_random_seed)
 
-    def vasicek_model(self, r0: float, alpha: float, b: float, interest_vol: float) -> np.ndarray:
+    def vasicek_model(self, a: float, b: float, r_sigma: float) -> np.ndarray:
         """
-        vasicek model for interest rate simulation
+        When interest rate follows a stochastic process. Vasicek model for interest rate simulation.
         this is the continuous-time analog of the AR(1) process.
-        Interest rate in the vesicke model can be negative.
-        :param r0: current interest rate
-        :param alpha: speed of mean-reversion
+        Interest rate in the Vasicek model can be negative. \n
+
+        dr = a(b-r) * dt + r_sigma * dz
+        :param a: speed of mean-reversion
         :param b: risk-free rate is mean-reverting to b
-        :param interest_vol: interest rate volatility (standard deviation)
+        :param r_sigma: interest rate volatility (standard deviation)
         :return:
         """
-        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
+        _interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
+        _interest_array = np.full((self.simulation_rounds, self.no_of_slices), self.r[0, 0] * self._dt)
 
         for i in range(1, self.no_of_slices):
-            self.interest_array[:, i] = b + np.exp(-alpha / self.no_of_slices) * (
-                    self.interest_array[:, i - 1] - b) + np.sqrt(
-                interest_vol ** 2 / (2 * alpha) * (1 - np.exp(-2 * alpha / self.no_of_slices))
-            ) * self.interest_z_t[:, i]
+            _interest_array[:, i] = b + np.exp(-a / self.no_of_slices) * (_interest_array[:, i - 1] - b) + np.sqrt(
+                r_sigma ** 2 / (2 * a) * (1 - np.exp(-2 * a / self.no_of_slices))
+            ) * _interest_z_t[:, i]
 
         # re-define the interest rate array
-        self.r = self.interest_array
+        self.r = _interest_array
 
-        return self.interest_array
+        return _interest_array
 
-    def cox_ingersoll_ross_model(self, r0: float, alpha: float, b: float, interest_vol: float) -> np.ndarray:
+    def cox_ingersoll_ross_model(self, a: float, b: float, r_sigma: float) -> np.ndarray:
         """
-        if asset volatility is stochastic
-        incorporate term structure to model risk free rate (r)
-        non central chi-square distribution. \n
-        Interest rate in CIR model cannot be negative
-        """
-        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
+        When interest rate follows a stochastic process. Incorporate term structure to model risk-free rate (r)
+        under non-central chi-square transition probability density. \n
+        Note that interest rate in CIR model cannot be negative.
 
-        # CIR noncentral chi-square distribution degree of freedom
-        self.degree_freedom = 4 * b * alpha / interest_vol ** 2
+        dr = a(b-4) * dt + r_sigma * sqrt(r) * dz
+        """
+        _interest_array = np.full((self.simulation_rounds, self.no_of_slices), self.r[0, 0] * self._dt)
+
+        # CIR non-central chi-square distribution degree of freedom
+        _dof = 4 * b * a / r_sigma ** 2
 
         for i in range(1, self.no_of_slices):
-            self.Lambda = (4 * alpha * np.exp(-alpha / self.no_of_slices) * self.interest_array[:, i - 1] / (
-                    interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices))))
-            self.chi_square_factor = np.random.noncentral_chisquare(df=self.degree_freedom,
-                                                                    nonc=self.Lambda,
-                                                                    size=self.simulation_rounds)
+            _Lambda = (4 * a * np.exp(-a / self.no_of_slices) * _interest_array[:, i - 1] / (
+                    r_sigma ** 2 * (1 - np.exp(-a / self.no_of_slices))))
+            _chi_square_factor = np.random.noncentral_chisquare(df=_dof,
+                                                                nonc=_Lambda,
+                                                                size=self.simulation_rounds)
 
-            self.interest_array[:, i] = interest_vol ** 2 * (1 - np.exp(-alpha / self.no_of_slices)) / (
-                    4 * alpha) * self.chi_square_factor
+            _interest_array[:, i] = r_sigma ** 2 * (1 - np.exp(-a / self.no_of_slices)) / (
+                    4 * a) * _chi_square_factor
 
         # re-define the interest rate array
-        self.r = self.interest_array
+        self.r = _interest_array
 
-        return self.interest_array
+        return _interest_array
 
-    def CIR_heston(self, r0: float, alpha_r: float, b_r: float, interest_vol: float, v0: float, alpha_v: float,
-                   b_v: float, asset_vol: float) -> Tuple[np.ndarray, np.ndarray]:
-        self.df_r = 4 * b_r * alpha_r / interest_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
-        self.df_v = 4 * b_v * alpha_v / asset_vol ** 2  # CIR noncentral chi-square distribution degree of freedom
+    def heston(self, kappa: float, theta: float, sigma_v: float, rho: float = 0.0) -> np.ndarray:
+        """
+        When asset volatility (variance NOT sigma!) follows a stochastic process.
 
-        self.interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.interest_array = np.full((self.simulation_rounds, self.no_of_slices), r0 * self.h)
+        dv(t) = kappa[theta - v(t)] * dt + sigma_v * sqrt(v(t)) * dZ
+        :param: kappa: rate at which vt reverts to theta
+        :param: theta: long-term variance
+        :param: sigma_v: sigma of the volatility
+        :param: rho: correlation between the volatility and the rate of return
+        :return: stochastic volatility array
+        """
+        _variance_v = sigma_v ** 2
+        assert (2 * kappa * theta > _variance_v)  # Feller condition
 
-        self.vol_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
-        self.vol_array = np.full((self.simulation_rounds, self.no_of_slices), v0 / (self.T * self.no_of_slices))
+        # step 1: simulate correlated zt
+        _mu = np.array([0, 0])
+        _cov = np.array([[1, rho], [rho, 1]])
 
+        _zt = sts.multivariate_normal.rvs(mean=_mu, cov=_cov, size=(self.simulation_rounds, self.no_of_slices))
+        _variance_array = np.full((self.simulation_rounds, self.no_of_slices),
+                                  self.sigma[0, 0] ** 2)
+        self.z_t = _zt[:, :, 0]
+        _zt_v = _zt[:, :, 1]
+
+        # step 2: simulation
         for i in range(1, self.no_of_slices):
-            # for interest rate simulation
-            self.Lambda = (4 * alpha_r * np.exp(-alpha_r / self.no_of_slices) * self.interest_array[:, i - 1] / (
-                    interest_vol ** 2 * (1 - np.exp(-alpha_r / self.no_of_slices))))
-            self.chi_square_factor = np.random.noncentral_chisquare(df=self.df_r,
-                                                                    nonc=self.Lambda,
-                                                                    size=self.simulation_rounds)
-
-            self.interest_array[:, i] = interest_vol ** 2 * (1 - np.exp(-alpha_r / self.no_of_slices)) / (
-                    4 * alpha_r) * self.chi_square_factor
-
-            # for diffusion/volatility simulation
-            self.Lambda = (4 * alpha_v * np.exp(-alpha_v / self.no_of_slices) * self.vol_array[:, i - 1] / (
-                    asset_vol ** 2 * (1 - np.exp(-alpha_v / self.no_of_slices))))
-            self.chi_square_factor = np.random.noncentral_chisquare(df=self.df_v,
-                                                                    nonc=self.Lambda,
-                                                                    size=self.simulation_rounds)
-
-            self.vol_array[:, i] = asset_vol ** 2 * (1 - np.exp(-alpha_v / self.no_of_slices)) / (
-                    4 * alpha_v) * self.chi_square_factor
+            _drift = kappa * (theta - _variance_array[:, i - 1]) * self._dt
+            _diffusion = sigma_v * np.sqrt(_variance_array[:, i - 1]) * _zt_v[:, i - 1] * np.sqrt(self._dt)
+            _delta_vt = _drift + _diffusion
+            _variance_array[:, i] = _variance_array[:, i - 1] + _delta_vt
 
         # re-define the interest rate and volatility path
-        self.r = self.interest_array
-        self.sigma = self.vol_array
+        self.sigma = np.sqrt(_variance_array)
 
-        return self.interest_z_t, self.vol_array
+        return self.sigma
 
     def stock_price_simulation(self) -> Tuple[np.ndarray, float]:
-        self.exp_mean = (self.mue - self.div_yield - (self.sigma ** 2.0) * 0.5) * self.h
-        self.exp_diffusion = self.sigma * np.sqrt(self.h)
+        self.exp_mean = (self.mue - self.div_yield - (self.sigma ** 2.0) * 0.5) * self._dt
+        self.exp_diffusion = self.sigma * np.sqrt(self._dt)
 
-        self.z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
         self.price_array = np.zeros((self.simulation_rounds, self.no_of_slices))
         self.price_array[:, 0] = self.S0
 
         for i in range(1, self.no_of_slices):
             self.price_array[:, i] = self.price_array[:, i - 1] * np.exp(
-                self.exp_mean[:, i] + self.exp_diffusion[:, i] * self.z_t[:, i]
+                self.exp_mean[:, i - 1] + self.exp_diffusion[:, i - 1] * self.z_t[:, i - 1]
             )
 
         self.terminal_prices = self.price_array[:, -1]
@@ -197,8 +198,8 @@ class MonteCarloOptionPricing:
 
         self.k = np.exp(jump_alpha) - 1
 
-        self.exp_mean = (self.mue - self.div_yield - poisson_lambda * self.k - (self.sigma ** 2.0) * 0.5) * self.h
-        self.exp_diffusion = self.sigma * np.sqrt(self.h)
+        self.exp_mean = (self.mue - self.div_yield - poisson_lambda * self.k - (self.sigma ** 2.0) * 0.5) * self._dt
+        self.exp_diffusion = self.sigma * np.sqrt(self._dt)
 
         for i in range(1, self.no_of_slices):
             # poisson jump

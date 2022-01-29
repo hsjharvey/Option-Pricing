@@ -67,7 +67,8 @@ The final predicted price is the average of all simulated prices at time T (colu
 | simulation 3  |   |   |  |  |  |  S<sub>3,T</sub> |
 |      ...      |   |   |  |  |  |              ... |
 
-* `vasicek()` and `cox_ingersoll_ross_model()` and `CIR_Heston()`: interest rate and volatility simulation.
+* `vasicek()` and `cox_ingersoll_ross_model()`: stochastic interest rate (work-in-progress).
+* `heston()`: stochastic volatility.
 
 Note: the default case is two tables with constant values. Call these two functions before
 running `stock_price_simulation()`.
