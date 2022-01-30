@@ -155,16 +155,24 @@ class BSMOptionValuation:
         :param tolerance: allows to specify the tolerance level
         :return: implied volatility given the observed option price
         """
-        implied_vol = self.sigma
+        sigma_old = self.sigma
 
         for _ in range(num_iterations):
-            new_implied_vol = (self.call_value() - observed_call_price) / self.vega()
+            self._d1, self._d2 = self._calculate_d1_d2()
+            _cal_val = self.call_value()
+            option_price_diff = _cal_val - observed_call_price
 
-            if abs(implied_vol - new_implied_vol) <= tolerance:
+            if abs(option_price_diff) <= tolerance:
                 break
 
-            implied_vol = new_implied_vol
+            _vega = self.vega()
+            self.sigma = self.sigma - option_price_diff / (_vega + 1e-10)
 
+        implied_vol = self.sigma
+
+        # restore back the status
+        self.sigma = sigma_old
+        self._d1, self._d2 = self._calculate_d1_d2()
         return implied_vol
 
     def put_value(self, observed_call_price: float = None) -> float:

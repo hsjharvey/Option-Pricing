@@ -9,7 +9,7 @@ from BSM_option_class import BSMOptionValuation
 
 # initialize parameters
 S0 = 40  # e.g. spot price = 35
-K = 1  # e.g. exercise price = 40
+K = 40  # e.g. exercise price = 40
 T = 1.0  # e.g. six months = 0.5
 r = 0.08  # e.g. risk free rate = 1%
 sigma = 0.3  # e.g. volatility = 5%
@@ -19,7 +19,7 @@ div_yield = 0.0  # e.g. dividend yield = 1%
 bsm = BSMOptionValuation(S0, K, T, r, sigma, div_yield)
 
 # Get observed call and put price
-observed_call_price = 146.75
+observed_call_price = 6.3
 observed_put_price = 120
 
 # Calculate call price
