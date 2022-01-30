@@ -118,6 +118,10 @@ class MonteCarloOptionPricing:
         """
         When asset volatility (variance NOT sigma!) follows a stochastic process.
 
+        Heston stochastic volatility with Euler discretisation. Notice the native Euler discretisation could lead to
+        negative volatility. To mitigate this issue, several methods could be used. Here we choose the full truncation
+        method.
+
         dv(t) = kappa[theta - v(t)] * dt + sigma_v * sqrt(v(t)) * dZ
         :param: kappa: rate at which vt reverts to theta
         :param: theta: long-term variance
@@ -140,14 +144,15 @@ class MonteCarloOptionPricing:
 
         # step 2: simulation
         for i in range(1, self.no_of_slices):
-            _drift = kappa * (theta - _variance_array[:, i - 1]) * self._dt
-            _diffusion = sigma_v * np.sqrt(_variance_array[:, i - 1]) * _zt_v[:, i - 1] * np.sqrt(self._dt)
+            _previous_slice_variance = np.maximum(_variance_array[:, i - 1], 0)
+            _drift = kappa * (theta - _previous_slice_variance) * self._dt
+            _diffusion = sigma_v * np.sqrt(_previous_slice_variance) * \
+                         _zt_v[:, i - 1] * np.sqrt(self._dt)
             _delta_vt = _drift + _diffusion
             _variance_array[:, i] = _variance_array[:, i - 1] + _delta_vt
 
         # re-define the interest rate and volatility path
-        self.sigma = np.sqrt(_variance_array)
-
+        self.sigma =  np.sqrt(np.maximum(_variance_array, 0))
         return self.sigma
 
     def stock_price_simulation(self) -> Tuple[np.ndarray, float]:

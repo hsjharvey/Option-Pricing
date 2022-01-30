@@ -39,7 +39,7 @@ MC = MonteCarloOptionPricing(S0=S0,
 # MC.cox_ingersoll_ross_model(a=1, b=2, r_sigma=0.5)  # use Cox Ingersoll Ross (CIR) model
 
 # stochastic volatility (sigma)
-MC.heston(kappa=0.7, theta=0.7, sigma_v=0.3, rho=0)  # heston model
+MC.heston(kappa=2, theta=0.7, sigma_v=0.3, rho=0)  # heston model
 
 MC.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
