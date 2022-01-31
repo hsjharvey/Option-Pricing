@@ -61,7 +61,7 @@ class MonteCarloOptionPricing:
         elif type(fix_random_seed) is int:
             np.random.seed(fix_random_seed)
 
-    def vasicek_model(self, a: float, b: float, r_sigma: float) -> np.ndarray:
+    def vasicek_model(self, a: float, b: float, sigma_r: float) -> np.ndarray:
         """
         When interest rate follows a stochastic process. Vasicek model for interest rate simulation.
         this is the continuous-time analog of the AR(1) process.
@@ -70,7 +70,7 @@ class MonteCarloOptionPricing:
         dr = a(b-r) * dt + r_sigma * dz
         :param a: speed of mean-reversion
         :param b: risk-free rate is mean-reverting to b
-        :param r_sigma: interest rate volatility (standard deviation)
+        :param sigma_r: interest rate volatility (standard deviation)
         :return:
         """
         _interest_z_t = np.random.standard_normal((self.simulation_rounds, self.no_of_slices))
@@ -78,7 +78,7 @@ class MonteCarloOptionPricing:
 
         for i in range(1, self.no_of_slices):
             _interest_array[:, i] = b + np.exp(-a / self.no_of_slices) * (_interest_array[:, i - 1] - b) + np.sqrt(
-                r_sigma ** 2 / (2 * a) * (1 - np.exp(-2 * a / self.no_of_slices))
+                sigma_r ** 2 / (2 * a) * (1 - np.exp(-2 * a / self.no_of_slices))
             ) * _interest_z_t[:, i]
 
         # re-define the interest rate array
@@ -86,7 +86,7 @@ class MonteCarloOptionPricing:
 
         return _interest_array
 
-    def cox_ingersoll_ross_model(self, a: float, b: float, r_sigma: float) -> np.ndarray:
+    def cox_ingersoll_ross_model(self, a: float, b: float, sigma_r: float) -> np.ndarray:
         """
         When interest rate follows a stochastic process. Incorporate term structure to model risk-free rate (r)
         under non-central chi-square transition probability density. \n
@@ -94,19 +94,20 @@ class MonteCarloOptionPricing:
 
         dr = a(b-4) * dt + r_sigma * sqrt(r) * dz
         """
+        assert 2 * a * b > sigma_r ** 2  # Feller condition, to ensure r_t > 0
         _interest_array = np.full((self.simulation_rounds, self.no_of_slices), self.r[0, 0] * self._dt)
 
         # CIR non-central chi-square distribution degree of freedom
-        _dof = 4 * b * a / r_sigma ** 2
+        _dof = 4 * b * a / sigma_r ** 2
 
         for i in range(1, self.no_of_slices):
             _Lambda = (4 * a * np.exp(-a / self.no_of_slices) * _interest_array[:, i - 1] / (
-                    r_sigma ** 2 * (1 - np.exp(-a / self.no_of_slices))))
+                    sigma_r ** 2 * (1 - np.exp(-a / self.no_of_slices))))
             _chi_square_factor = np.random.noncentral_chisquare(df=_dof,
                                                                 nonc=_Lambda,
                                                                 size=self.simulation_rounds)
 
-            _interest_array[:, i] = r_sigma ** 2 * (1 - np.exp(-a / self.no_of_slices)) / (
+            _interest_array[:, i] = sigma_r ** 2 * (1 - np.exp(-a / self.no_of_slices)) / (
                     4 * a) * _chi_square_factor
 
         # re-define the interest rate array
@@ -130,7 +131,7 @@ class MonteCarloOptionPricing:
         :return: stochastic volatility array
         """
         _variance_v = sigma_v ** 2
-        assert (2 * kappa * theta > _variance_v)  # Feller condition
+        assert 2 * kappa * theta > _variance_v  # Feller condition
 
         # step 1: simulate correlated zt
         _mu = np.array([0, 0])
@@ -152,7 +153,7 @@ class MonteCarloOptionPricing:
             _variance_array[:, i] = _variance_array[:, i - 1] + _delta_vt
 
         # re-define the interest rate and volatility path
-        self.sigma =  np.sqrt(np.maximum(_variance_array, 0))
+        self.sigma = np.sqrt(np.maximum(_variance_array, 0))
         return self.sigma
 
     def stock_price_simulation(self) -> Tuple[np.ndarray, float]:

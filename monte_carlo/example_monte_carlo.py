@@ -20,7 +20,7 @@ barrier_price = 80.0  # barrier level for barrier options
 parisian_barrier_days = 21  # no.of consecutive trading days required for parisian options
 
 # optional parameter
-simulation_rounds = int(5)  # For monte carlo simulation, a large number of simulations required
+simulation_rounds = int(10000)  # For monte carlo simulation, a large number of simulations required
 
 # initialize instance
 MC = MonteCarloOptionPricing(S0=S0,
@@ -35,11 +35,11 @@ MC = MonteCarloOptionPricing(S0=S0,
                              fix_random_seed=500)
 
 # stochastic interest rate
-# MC.vasicek_model(a=0.2, b=0.1, r_sigma=0.01)  # use Vasicek model
-# MC.cox_ingersoll_ross_model(a=1, b=2, r_sigma=0.5)  # use Cox Ingersoll Ross (CIR) model
+# MC.vasicek_model(a=0.2, b=0.1, sigma_r=0.01)  # use Vasicek model
+MC.cox_ingersoll_ross_model(a=0.5, b=0.05, sigma_r=0.1)  # use Cox Ingersoll Ross (CIR) model
 
 # stochastic volatility (sigma)
-MC.heston(kappa=2, theta=0.7, sigma_v=0.3, rho=0)  # heston model
+MC.heston(kappa=2, theta=0.3, sigma_v=0.3, rho=0.5)  # heston model
 
 MC.stock_price_simulation()
 # MT.stock_price_simulation_with_poisson_jump(jump_alpha=0.1, jump_std=0.25, poisson_lambda=0)
