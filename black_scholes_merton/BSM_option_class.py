@@ -162,11 +162,13 @@ class BSMOptionValuation:
             _cal_val = self.call_value()
             option_price_diff = _cal_val - observed_call_price
 
-            if abs(option_price_diff) <= tolerance:
+            _vega = self.vega()
+            sigma_new = self.sigma - option_price_diff / (_vega + 1e-10)
+
+            if abs(sigma_new - self.sigma) <= tolerance:
                 break
 
-            _vega = self.vega()
-            self.sigma = self.sigma - option_price_diff / (_vega + 1e-10)
+            self.sigma = sigma_new
 
         implied_vol = self.sigma
 
