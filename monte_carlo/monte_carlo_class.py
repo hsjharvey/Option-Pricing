@@ -16,11 +16,11 @@ class MonteCarloOptionPricing:
         """
         An important reminder, by default the implementation assumes constant interest rate and volatility.
         To allow for stochastic interest rate and vol, run Vasicek/CIR for stochastic interest rate and
-        run Heston for stochastic volatility.
+        run Heston for stochastic volatility before you run price simulation.
 
         :param S0: current price of the underlying asset (e.g. stock)
         :param K: exercise price
-        :param T: time to maturity, in years, can be float
+        :param T: time to maturity, in years, a float number
         :param r: interest rate, by default we assume constant interest rate model
         :param sigma: volatility (in standard deviation) of the asset annual returns
         :param div_yield: annual dividend yield
@@ -156,7 +156,7 @@ class MonteCarloOptionPricing:
         self.sigma = np.sqrt(np.maximum(_variance_array, 0))
         return self.sigma
 
-    def stock_price_simulation(self) -> Tuple[np.ndarray, float]:
+    def stock_price_simulation(self) -> np.ndarray:
         self.exp_mean = (self.mue - self.div_yield - (self.sigma ** 2.0) * 0.5) * self._dt
         self.exp_diffusion = self.sigma * np.sqrt(self._dt)
 
@@ -169,20 +169,19 @@ class MonteCarloOptionPricing:
             )
 
         self.terminal_prices = self.price_array[:, -1]
-        self.stock_price_expectation = np.mean(self.terminal_prices)
-        self.stock_price_standard_error = np.std(self.terminal_prices) / np.sqrt(len(self.terminal_prices))
+        self.stock_price_expectation = np.average(self.terminal_prices)
 
         print('-' * 64)
         print(
             " Number of simulations %4.1i \n S0 %4.1f \n K %2.1f \n Maximum Stock price %4.2f \n"
-            " Minimum Stock price %4.2f \n Average stock price %4.3f \n Standard Error %4.5f " % (
+            " Minimum Stock price %4.2f \n Average stock price %4.3f " % (
                 self.simulation_rounds, self.S0, self.K, np.max(self.terminal_prices),
-                np.min(self.terminal_prices), self.stock_price_expectation, self.stock_price_standard_error
+                np.min(self.terminal_prices), self.stock_price_expectation
             )
         )
         print('-' * 64)
 
-        return self.stock_price_expectation, self.stock_price_standard_error
+        return self.stock_price_expectation
 
     def stock_price_simulation_with_poisson_jump(self, jump_alpha: float, jump_std: float, poisson_lambda: float) -> \
             Tuple[np.ndarray, float]:
@@ -225,39 +224,37 @@ class MonteCarloOptionPricing:
             ) * self.poisson_jump_factor
 
         self.terminal_prices = self.price_array[:, -1]
-        self.stock_price_expectation = np.mean(self.terminal_prices)
-        self.stock_price_standard_error = np.std(self.terminal_prices) / np.sqrt(len(self.terminal_prices))
+        self.stock_price_expectation = np.average(self.terminal_prices)
 
         print('-' * 64)
         print(
             " Number of simulations %4.1i \n S0 %4.1f \n K %2.1f \n Maximum Stock price %4.2f \n"
-            " Minimum Stock price %4.2f \n Average stock price %4.3f \n Standard Error %4.5f " % (
+            " Minimum Stock price %4.2f \n Average stock price %4.3f " % (
                 self.simulation_rounds, self.S0, self.K, np.max(self.terminal_prices),
-                np.min(self.terminal_prices), self.stock_price_expectation, self.stock_price_standard_error
+                np.min(self.terminal_prices), self.stock_price_expectation
             )
         )
         print('-' * 64)
 
-        return self.stock_price_expectation, self.stock_price_standard_error
+        return self.stock_price_expectation
 
     def european_call(self) -> Tuple[float, float]:
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
 
         self.terminal_profit = np.maximum((self.terminal_prices - self.K), 0.0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
-        self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
+        self.expectation = np.average(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
 
         print('-' * 64)
         print(
             " European call monte carlo \n S0 %4.1f \n K %2.1f \n"
-            " Call Option Value %4.3f \n Standard Error %4.5f " % (
-                self.S0, self.K, self.expectation, self.standard_error
+            " Call Option Value %4.3f \n " % (
+                self.S0, self.K, self.expectation
             )
         )
         print('-' * 64)
 
-        return self.expectation, self.standard_error
+        return self.expectation
 
     def european_put(self, empirical_call: float or None = None) -> float:
         """
@@ -275,7 +272,7 @@ class MonteCarloOptionPricing:
 
         return self.put_value
 
-    def asian_avg_price_option(self, avg_method: str = 'arithmetic', option_type: str = 'call') -> Tuple[float, float]:
+    def asian_avg_price_option(self, avg_method: str = 'arithmetic', option_type: str = 'call') -> float:
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
         assert avg_method == 'arithmetic' or avg_method == 'geometric', 'arithmetic or geometric average?'
@@ -288,7 +285,7 @@ class MonteCarloOptionPricing:
             self.terminal_profit = np.maximum((self.K - average_prices), 0.0)
 
         if avg_method == 'arithmetic':
-            self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
+            self.expectation = np.average(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         elif avg_method == 'geometric':
             self.expectation = sts.gmean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
 
@@ -297,16 +294,15 @@ class MonteCarloOptionPricing:
         print('-' * 64)
         print(
             " Asian %s monte carlo arithmetic average \n S0 %4.1f \n K %2.1f \n"
-            " Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
+            " Option Value %4.3f" % (
+                option_type, self.S0, self.K, self.expectation
             )
         )
         print('-' * 64)
 
-        return self.expectation, self.standard_error
+        return self.expectation
 
-    def american_option_longstaff_schwartz(self, poly_degree: int = 2, option_type: str = 'call') -> \
-            Tuple[float, float]:
+    def american_option_longstaff_schwartz(self, poly_degree: int = 2, option_type: str = 'call') -> float:
         """
         American option, Longstaff and Schwartz method
 
@@ -356,22 +352,21 @@ class MonteCarloOptionPricing:
 
         simulation_vals = (self.intrinsic_val * stopping_rule * self.discount_table).sum(axis=1)
         self.expectation = np.average(simulation_vals)
-        self.standard_error = np.std(simulation_vals) / np.sqrt(self.simulation_rounds)
 
         print('-' * 64)
         print(
             " American %s Longstaff-Schwartz method (assume polynomial fit)"
             " \n polynomial degree = %i \n S0 %4.1f \n K %2.1f \n"
-            " Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, poly_degree, self.S0, self.K, self.expectation, self.standard_error
+            " Option Value %4.3f " % (
+                option_type, poly_degree, self.S0, self.K, self.expectation
             )
         )
         print('-' * 64)
 
-        return self.expectation, self.standard_error
+        return self.expectation
 
     def barrier_option(self, option_type: str, barrier_price: float, barrier_type: str, barrier_direction: str,
-                       parisian_barrier_days: int or None = None) -> Tuple[float, float]:
+                       parisian_barrier_days: int or None = None) -> float:
         assert option_type == "call" or option_type == "put", 'option type must be either call or put'
         assert barrier_type == "knock-in" or barrier_type == "knock-out", \
             'barrier type must be either knock-in or knock-out'
@@ -413,22 +408,21 @@ class MonteCarloOptionPricing:
         elif barrier_type == "knock-out":
             self.terminal_profit = np.where(np.sum(barrier_check, axis=1) >= 1, 0, self.intrinsic_val[:, -1])
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
-        self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
+        self.expectation = np.average(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
 
         print('-' * 64)
         print(
             " Barrier european %s \n Type: %s \n Direction: %s @ %s \n S0 %4.1f \n K %2.1f \n"
-            " Option Value %4.3f \n Standard Error %4.5f " % (
+            " Option Value %4.3f" % (
                 option_type, barrier_type, barrier_direction, barrier_price,
-                self.S0, self.K, self.expectation, self.standard_error
+                self.S0, self.K, self.expectation
             )
         )
         print('-' * 64)
 
-        return self.expectation, self.standard_error
+        return self.expectation
 
-    def look_back_european(self, option_type: str = 'call') -> Tuple[float, float]:
+    def look_back_european(self, option_type: str = 'call') -> float:
         assert len(self.terminal_prices) != 0, 'Please simulate the stock price first'
         assert option_type == 'call' or option_type == 'put', 'option_type must be either call or put'
 
@@ -440,15 +434,15 @@ class MonteCarloOptionPricing:
         elif option_type == "put":
             self.terminal_profit = np.maximum((self.K - self.min_price), 0.0)
 
-        self.expectation = np.mean(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
+        self.expectation = np.average(self.terminal_profit * np.exp(-np.sum(self.r, axis=1)))
         self.standard_error = np.std(self.terminal_profit) / np.sqrt(len(self.terminal_profit))
 
         print('-' * 64)
         print(
             " Lookback european %s monte carlo \n S0 %4.1f \n K %2.1f \n"
-            " Option Value %4.3f \n Standard Error %4.5f " % (
-                option_type, self.S0, self.K, self.expectation, self.standard_error
+            " Option Value %4.3f " % (
+                option_type, self.S0, self.K, self.expectation
             )
         )
         print('-' * 64)
-        return self.expectation, self.standard_error
+        return self.expectation
